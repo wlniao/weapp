@@ -14,12 +14,13 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PackageId>Wlniao.WeAPP</PackageId>
-    <Version>2.0.0</Version>
+    <Version>0.0.1</Version>
     <RootNamespace>Wlniao.WeAPP</RootNamespace>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
     <PackageIconUrl>https://static.wlniao.com/wlniao/logo.png</PackageIconUrl>
     <PackageProjectUrl>https://www.wlniao.com/weapp/mongo</PackageProjectUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
@@ -41,7 +42,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="2.0.3-bate4" />
+    <PackageReference Include="Wlniao.XCore" Version="2.0.3" />
   </ItemGroup>
 
 </Project>
