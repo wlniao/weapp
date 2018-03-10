@@ -29,9 +29,12 @@ namespace Wlniao.WeAPP
                 {
                     var content = new System.Net.Http.ByteArrayContent(_ctx.HttpRequestBody);
                     content.Headers.Clear();
-                    foreach (var item in _ctx.HttpRequestHeaders)
+                    if (_ctx.HttpRequestHeaders != null)
                     {
-                        content.Headers.Add(item.Key, item.Value);
+                        foreach (var item in _ctx.HttpRequestHeaders)
+                        {
+                            content.Headers.Add(item.Key, item.Value);
+                        }
                     }
                     _ctx.HttpTask = _ctx.HttpClient.PostAsync(_ctx.RequestUrl, content);
                 }

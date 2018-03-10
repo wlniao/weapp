@@ -20,9 +20,11 @@ namespace Wlniao.WeAPP
         public WeAPPHandler(PipelineHandler handler) : base(handler)
         {
             EncoderMap = new Dictionary<string, ResponseEncoder>() {
+                { "getwxacode", GetWxaCodeEncode },
                 { "jscode2session", JsCode2SessionEncode },
             };
             DecoderMap = new Dictionary<string, ResponseDecoder>() {
+                { "getwxacode", GetWxaCodeDecode },
                 { "jscode2session", JsCode2SessionDecode },
             };
         }
@@ -66,10 +68,45 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
+        #region GetWxaCode
+        private void GetWxaCodeEncode(Context ctx)
+        {
+            if (string.IsNullOrEmpty(ctx.AccessToken))
+            {
+                var rlt = Wlniao.OpenApi.Wx.GetAccessToken(ctx.MsAppId, ctx.MsAppSecret);
+                if (rlt.success)
+                {
+                    ctx.AccessToken = rlt.data;
+                }
+                else
+                {
+                    ctx.HttpResponseString = JsonConvert.SerializeObject(new { success = false, message = rlt.message });
+                }
+            }
+            if (!string.IsNullOrEmpty(ctx.AccessToken))
+            {
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.RequestUrl = "/wxa/getwxacode"
+                    + "?access_token=" + ctx.AccessToken;
+            }
+        }
+        private void GetWxaCodeDecode(Context ctx)
+        {
+            if (ctx.HttpResponseBody.Length > 0)
+            {
+                ctx.Response = new Response.GetWxaCodeResponse() { image = ctx.HttpResponseBody };
+            }
+            else
+            {
+                ctx.Response = new Error() { errmsg = "InvalidJsonString" };
+            }
+        }
+        #endregion
+
         #region JsCode2Session
         private void JsCode2SessionEncode(Context ctx)
         {
-            var req = (Wlniao.WeAPP.Request.JsCode2SessionRequest)ctx.Request;
+            var req = (Request.JsCode2SessionRequest)ctx.Request;
             if (req != null)
             {
                 if (string.IsNullOrEmpty(req.appid))

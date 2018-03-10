@@ -151,6 +151,33 @@ namespace Wlniao.WeAPP
         }
         #endregion 
 
+        #region GetWxaCode
+        /// <summary>
+        /// 生成小程序码
+        /// </summary>
+        public ApiResult<GetWxaCodeResponse> GetWxaCode(GetWxaCodeRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.path))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+            }
+            return GetResponseFromAsyncTask(GetWxaCodeAsync(request));
+        }
+        /// <summary>
+        /// 生成小程序码 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeAsync(GetWxaCodeRequest request)
+        {
+            return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacode", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
 
     }
 }

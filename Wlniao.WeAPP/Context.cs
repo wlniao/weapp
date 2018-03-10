@@ -18,6 +18,10 @@ namespace Wlniao.WeAPP
         /// </summary>
         public string MsAppSecret { get; set; }
         /// <summary>
+        /// 接口调用凭据
+        /// </summary>
+        public string AccessToken { get; set; }
+        /// <summary>
         /// HTTP请求方式
         /// </summary>
         public System.Net.Http.HttpMethod Method { get; set; }
