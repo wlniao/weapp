@@ -124,6 +124,106 @@ namespace Wlniao.WeAPP
         }
 
 
+        #region GetWxaCode 生成小程序码
+        /// <summary>
+        /// 
+        /// </summary>
+        public ApiResult<GetWxaCodeResponse> GetWxaCode(GetWxaCodeRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.path))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+            }
+            return GetResponseFromAsyncTask(GetWxaCodeAsync(request));
+        }
+        /// <summary>
+        /// 生成小程序码 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeAsync(GetWxaCodeRequest request)
+        {
+            return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacode", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
+        #region UnifiedOrder 小程序支付统一下单
+        /// <summary>
+        /// 小程序支付统一下单
+        /// </summary>
+        public ApiResult<UnifiedOrderResponse> UnifiedOrder(UnifiedOrderRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.body))
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing body" };
+            }
+            else if (string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing out_trade_no" };
+            }
+            else if (request.total_fee <= 0)
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing total_fee" };
+            }
+            else if (string.IsNullOrEmpty(request.spbill_create_ip))
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing spbill_create_ip" };
+            }
+            else if (string.IsNullOrEmpty(request.notify_url))
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing notify_url" };
+            }
+            else if (string.IsNullOrEmpty(request.openid) && request.trade_type == "JSAPI")
+            {
+                return new ApiResult<UnifiedOrderResponse>() { message = "missing openid" };
+            }
+            return GetResponseFromAsyncTask(UnifiedOrderAsync(request));
+        }
+        /// <summary>
+        /// 小程序支付统一下单
+        /// </summary>
+        /// <param name="trade_no"></param>
+        /// <param name="total_fee"></param>
+        /// <param name="body"></param>
+        /// <param name="spbill_create_ip"></param>
+        /// <param name="notify_url"></param>
+        /// <param name="trade_type"></param>
+        /// <param name="openid"></param>
+        /// <returns></returns>
+        public ApiResult<UnifiedOrderResponse> UnifiedOrder(String trade_no, Int32 total_fee, String body, String spbill_create_ip, String notify_url, String trade_type, String openid)
+        {
+            var request = new UnifiedOrderRequest();
+            request.out_trade_no = trade_no;
+            request.body = body;
+            request.total_fee = total_fee;
+            request.spbill_create_ip = spbill_create_ip;
+            request.notify_url = notify_url;
+            request.trade_type = trade_type;
+            request.openid = openid;
+            return GetResponseFromAsyncTask(UnifiedOrderAsync(request));
+        }
+
+        /// <summary>
+        /// 小程序支付统一下单 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<UnifiedOrderResponse>> UnifiedOrderAsync(UnifiedOrderRequest request)
+        {
+            return CallAsync<UnifiedOrderRequest, UnifiedOrderResponse>("unifiedorder", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
+
+
         #region JsCode2Session
         /// <summary>
         /// code 换取 session_key。
@@ -150,34 +250,5 @@ namespace Wlniao.WeAPP
             return CallAsync<JsCode2SessionRequest, JsCode2SessionResponse>("jscode2session", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
-
-        #region GetWxaCode
-        /// <summary>
-        /// 生成小程序码
-        /// </summary>
-        public ApiResult<GetWxaCodeResponse> GetWxaCode(GetWxaCodeRequest request)
-        {
-            if (request == null)
-            {
-                return new ApiResult<GetWxaCodeResponse>() { message = "require parameters" };
-            }
-            else if (string.IsNullOrEmpty(request.path))
-            {
-                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
-            }
-            return GetResponseFromAsyncTask(GetWxaCodeAsync(request));
-        }
-        /// <summary>
-        /// 生成小程序码 的异步形式。
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeAsync(GetWxaCodeRequest request)
-        {
-            return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacode", request, System.Net.Http.HttpMethod.Get);
-        }
-        #endregion 
-
-
     }
 }

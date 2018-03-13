@@ -17,27 +17,29 @@ namespace Wlniao.WeAPP
         public override void HandleBefore(IContext ctx)
         {
             var _ctx = (Context)ctx;
-            ////计算并添加参数签名
-            //_ctx.HttpRequestHeaders.Add("signature", MakeRequestSignature(_ctx));
             if (_ctx.Method == System.Net.Http.HttpMethod.Post)
             {
-                if (_ctx.HttpRequestBody == null)
+                System.Net.Http.HttpContent content;
+                if (_ctx.HttpResponseBody != null)
                 {
-                    _ctx.HttpTask = _ctx.HttpClient.PostAsync(_ctx.RequestUrl, null);
+                    content = new System.Net.Http.ByteArrayContent(_ctx.HttpRequestBody);
+                }
+                else if (!string.IsNullOrEmpty(_ctx.HttpRequestString))
+                {
+                    content = new System.Net.Http.StringContent(_ctx.HttpRequestString);
                 }
                 else
                 {
-                    var content = new System.Net.Http.ByteArrayContent(_ctx.HttpRequestBody);
-                    content.Headers.Clear();
-                    if (_ctx.HttpRequestHeaders != null)
-                    {
-                        foreach (var item in _ctx.HttpRequestHeaders)
-                        {
-                            content.Headers.Add(item.Key, item.Value);
-                        }
-                    }
-                    _ctx.HttpTask = _ctx.HttpClient.PostAsync(_ctx.RequestUrl, content);
+                    content = null;
                 }
+                if (content != null && _ctx.HttpRequestHeaders != null)
+                {
+                    foreach (var item in _ctx.HttpRequestHeaders)
+                    {
+                        content.Headers.Add(item.Key, item.Value);
+                    }
+                }
+                _ctx.HttpTask = _ctx.HttpClient.PostAsync(_ctx.RequestUrl, content);
             }
             else
             {
@@ -81,50 +83,5 @@ namespace Wlniao.WeAPP
             }
         }
 
-        /// <summary>
-        /// 连接Headers字段
-        /// </summary>
-        /// <param name="headers"></param>
-        /// <returns></returns>
-        private string MakeHeaderString(Dictionary<string, string> headers)
-        {
-            var items = new List<string>();
-            foreach (var item in headers)
-            {
-                if (item.Key.StartsWith("x-ots-"))
-                {
-                    items.Add(String.Format("{0}:{1}", item.Key, item.Value));
-                }
-            }
-            items.Sort();
-            return String.Join("\n", items);
-        }
-        /// <summary>
-        /// 计算签名
-        /// </summary>
-        /// <param name="signatureString"></param>
-        /// <param name="accessKeySecret"></param>
-        /// <returns></returns>
-        private string ComputeSignature(string signatureString, string accessKeySecret)
-        {
-            var hmac = new System.Security.Cryptography.HMACSHA1(System.Text.Encoding.ASCII.GetBytes(accessKeySecret));
-            var hashValue = hmac.ComputeHash(System.Text.Encoding.ASCII.GetBytes(signatureString));
-            var signature = System.Convert.ToBase64String(hashValue);
-            return signature;
-        }
-
-        private string MakeRequestSignature(Context ctx)
-        {
-            var headerString = MakeHeaderString(ctx.HttpRequestHeaders);
-            var signatureString = ctx.Operation + "\nPOST\n\n" + headerString + '\n';
-            return ComputeSignature(signatureString, ctx.MsAppSecret);
-        }
-
-        private string MakeResponseSignature(Context ctx)
-        {
-            string headerString = MakeHeaderString(ctx.HttpResponseHeaders);
-            string signatureString = headerString + "\n" + ctx.Operation;
-            return ComputeSignature(signatureString, ctx.MsAppSecret);
-        }
     }
 }

@@ -66,6 +66,10 @@ namespace Wlniao.WeAPP
         /// </summary>
         public byte[] HttpRequestBody { get; set; }
         /// <summary>
+        /// 请求的内容
+        /// </summary>
+        public string HttpRequestString { get; set; }
+        /// <summary>
         /// 输出的内容
         /// </summary>
         public byte[] HttpResponseBody { get; set; }
