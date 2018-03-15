@@ -44,11 +44,6 @@ namespace Wlniao.WeAPP
             {
                 _ctx.RequestUrl = _ctx.Operation;
             }
-            if (_ctx.Method == System.Net.Http.HttpMethod.Post)
-            {
-                var message = JsonConvert.SerializeObject(_ctx.Request);
-                _ctx.HttpRequestBody = System.Text.Encoding.UTF8.GetBytes(message);
-            }
             inner.HandleBefore(ctx);
         }
         /// <summary>
@@ -88,6 +83,7 @@ namespace Wlniao.WeAPP
             if (!string.IsNullOrEmpty(ctx.AccessToken))
             {
                 ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = JsonConvert.SerializeObject(ctx.Request);
                 ctx.RequestUrl = "/wxa/getwxacode"
                     + "?access_token=" + ctx.AccessToken;
             }

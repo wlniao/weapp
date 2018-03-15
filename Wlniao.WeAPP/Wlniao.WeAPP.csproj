@@ -19,7 +19,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
     <PackageIconUrl>https://static.wlniao.com/wlniao/logo.png</PackageIconUrl>
-    <PackageProjectUrl>https://www.wlniao.com/weapp/mongo</PackageProjectUrl>
+    <PackageProjectUrl>https://www.wlniao.com</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
@@ -27,6 +27,7 @@
     <DocumentationFile>bin\Debug\netstandard2.0\Wlniao.WeAPP.xml</DocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <WarningLevel>3</WarningLevel>
+    <OutputPath>bin\Debug</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
@@ -42,7 +43,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="2.0.3" />
+    <PackageReference Include="Wlniao.XCore" Version="2.0.5" />
   </ItemGroup>
 
 </Project>
