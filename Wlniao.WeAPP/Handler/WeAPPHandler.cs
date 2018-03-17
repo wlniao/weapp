@@ -129,11 +129,12 @@ namespace Wlniao.WeAPP
                     }
                 }
                 #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
                 var kvList = new List<KeyValuePair<String, String>>();
                 kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
                 kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
                 kvList.Add(new KeyValuePair<String, String>("device_info", req.device_info));
-                kvList.Add(new KeyValuePair<String, String>("nonce_str", strUtil.CreateRndStrE(20).ToUpper()));
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
                 kvList.Add(new KeyValuePair<String, String>("body", req.body));
                 if (!string.IsNullOrEmpty(req.sign_type))
                 {
@@ -208,47 +209,11 @@ namespace Wlniao.WeAPP
                 }
                 sb.Append("</xml>");
                 #endregion
-                
+
                 ctx.Method = System.Net.Http.HttpMethod.Post;
                 ctx.HttpRequestString = sb.ToString();
                 ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
                 ctx.RequestUrl = "pay/unifiedorder";
-
-                //var stream = cvt.ToStream(byteArray);
-                //var str = "";
-                //using (var client = new System.Net.Http.HttpClient())
-                //{
-                //    var reqest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, ctx.HttpClient.BaseAddress + ctx.RequestUrl);
-                //    if (stream != null && stream.Length > 0)
-                //    {
-                //        reqest.Content = new System.Net.Http.StreamContent(stream);
-                //    }
-                //    try
-                //    {
-                //        client.SendAsync(reqest).ContinueWith((requestTask) =>
-                //        {
-                //            var response = requestTask.Result;
-                //            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                //            {
-                //                response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                //                {
-                //                    str = readTask.Result;
-                //                }).Wait();
-                //            }
-                //            else
-                //            {
-                //                response.Content.ReadAsStringAsync().ContinueWith((readTask) =>
-                //                {
-                //                    str = readTask.Result;
-                //                }).Wait();
-                //            }
-                //        }).Wait();
-                //    }
-                //    catch (AggregateException aex)
-                //    {
-                //        str = aex.Message;
-                //    }
-                //}
             }
         }
         private void UnifiedOrderDecode(Context ctx)
@@ -263,12 +228,17 @@ namespace Wlniao.WeAPP
                     var result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
                     if (result_code == "SUCCESS")
                     {
+                        var req = (Request.UnifiedOrderRequest)ctx.Request;
                         var res = new Response.UnifiedOrderResponse();
                         res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
                         res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
                         res.trade_type = doc.GetElementsByTagName("trade_type")[0].InnerText.Trim();
                         res.prepay_id = doc.GetElementsByTagName("prepay_id")[0].InnerText.Trim();
+                        res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
                         res.code_url = res.trade_type != "NATIVE" ? "" : doc.GetElementsByTagName("code_url")[0].InnerText.Trim();
+                        res.timeStamp = DateTools.GetUnix().ToString();
+                        res.signType = req.sign_type;
+                        res.paySign = Encryptor.Md5Encryptor32("appId=" + res.appid + "&nonceStr=" + res.nonce_str + "&package=" + res.prepay_id + "&signType=" + res.signType + "&timeStamp=" + res.timeStamp + "&key=" + req.secret);
                         ctx.Response = res;
                     }
                     else
