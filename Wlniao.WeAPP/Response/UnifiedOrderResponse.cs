@@ -69,7 +69,7 @@ namespace Wlniao.WeAPP.Response
                     ,
                     nonceStr = nonce_str
                     ,
-                    package = prepay_id
+                    package = "prepay_id=" + prepay_id
                     ,
                     signType = signType
                     ,
