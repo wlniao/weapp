@@ -222,6 +222,44 @@ namespace Wlniao.WeAPP
         }
         #endregion 
 
+        #region OrderQuery 小程序支付统一下单
+        /// <summary>
+        /// 微信支付订单查询
+        /// </summary>
+        public ApiResult<OrderQueryResponse> OrderQuery(OrderQueryRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<OrderQueryResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<OrderQueryResponse>() { message = "missing transaction_id or out_trade_no" };
+            }
+            return GetResponseFromAsyncTask(OrderQueryAsync(request));
+        }
+        /// <summary>
+        /// 微信支付订单查询
+        /// </summary>
+        /// <param name="out_trade_no"></param>
+        /// <returns></returns>
+        public ApiResult<OrderQueryResponse> OrderQuery(String out_trade_no)
+        {
+            var request = new OrderQueryRequest();
+            request.out_trade_no = out_trade_no;
+            return GetResponseFromAsyncTask(OrderQueryAsync(request));
+        }
+        /// <summary>
+        /// 微信支付订单查询 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<OrderQueryResponse>> OrderQueryAsync(OrderQueryRequest request)
+        {
+            return CallAsync<OrderQueryRequest, OrderQueryResponse>("orderquery", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
 
 
         #region JsCode2Session

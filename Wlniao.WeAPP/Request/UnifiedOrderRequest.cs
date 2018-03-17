@@ -7,8 +7,8 @@ namespace Wlniao.WeAPP.Request
     /// </summary>
     public class UnifiedOrderRequest : Wlniao.Handler.IRequest
     {
-        private string _sign_type = "MD5";
-        private string _trade_type = "JSAPI";
+        private string _sign_type = "";
+        private string _trade_type = "";
 
         /// <summary>
         /// 小程序ID
@@ -33,7 +33,18 @@ namespace Wlniao.WeAPP.Request
         /// 签名类型
         /// </summary>
         /// <remarks>签名类型，默认为MD5，支持HMAC-SHA256和MD5</remarks>
-        public string sign_type { get { return _sign_type; } set { _sign_type = value; } }
+        public string sign_type
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_sign_type))
+                {
+                    return "MD5";
+                }
+                return _sign_type;
+            }
+            set { _sign_type = value; }
+        }
         /// <summary>
         /// 商品描述
         /// </summary>
@@ -77,8 +88,19 @@ namespace Wlniao.WeAPP.Request
         /// <summary>
         /// 交易类型
         /// </summary>
-        /// <remarks>小程序取值如下：JSAPI</remarks>
-        public string trade_type { get { return _trade_type; } set { _trade_type = value; } }
+        /// <remarks>调用接口提交的交易类型，取值如下：JSAPI，NATIVE，APP，MICROPAY</remarks>
+        public string trade_type
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_trade_type))
+                {
+                    return "JSAPI";
+                }
+                return _trade_type;
+            }
+            set { _trade_type = value; }
+        }
         /// <summary>
         /// 商品ID
         /// </summary>

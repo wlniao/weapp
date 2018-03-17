@@ -22,11 +22,13 @@ namespace Wlniao.WeAPP
             EncoderMap = new Dictionary<string, ResponseEncoder>() {
                 { "getwxacode", GetWxaCodeEncode },
                 { "unifiedorder", UnifiedOrderEncode },
+                { "orderquery", OrderQueryEncode },
                 { "jscode2session", JsCode2SessionEncode },
             };
             DecoderMap = new Dictionary<string, ResponseDecoder>() {
                 { "getwxacode", GetWxaCodeDecode },
                 { "unifiedorder", UnifiedOrderDecode },
+                { "orderquery", OrderQueryDecode },
                 { "jscode2session", JsCode2SessionDecode },
             };
         }
@@ -101,7 +103,6 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
-
         #region UnifiedOrder
         private void UnifiedOrderEncode(Context ctx)
         {
@@ -136,10 +137,7 @@ namespace Wlniao.WeAPP
                 kvList.Add(new KeyValuePair<String, String>("device_info", req.device_info));
                 kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
                 kvList.Add(new KeyValuePair<String, String>("body", req.body));
-                if (!string.IsNullOrEmpty(req.sign_type))
-                {
-                    kvList.Add(new KeyValuePair<String, String>("sign_type", req.sign_type));
-                }
+                kvList.Add(new KeyValuePair<String, String>("sign_type", req.sign_type));
                 kvList.Add(new KeyValuePair<String, String>("out_trade_no", req.out_trade_no));
                 if (!string.IsNullOrEmpty(req.fee_type))
                 {
@@ -156,7 +154,7 @@ namespace Wlniao.WeAPP
                     kvList.Add(new KeyValuePair<String, String>("time_expire", req.time_expire));
                 }
                 kvList.Add(new KeyValuePair<String, String>("notify_url", req.notify_url));
-                kvList.Add(new KeyValuePair<String, String>("trade_type", string.IsNullOrEmpty(req.trade_type) ? "JSAPI" : req.trade_type));
+                kvList.Add(new KeyValuePair<String, String>("trade_type", req.trade_type));
                 if (!string.IsNullOrEmpty(req.product_id))
                 {
                     kvList.Add(new KeyValuePair<String, String>("product_id", req.product_id));
@@ -220,18 +218,20 @@ namespace Wlniao.WeAPP
         {
             try
             {
+                var req = (Request.UnifiedOrderRequest)ctx.Request;
+                var res = new Response.UnifiedOrderResponse();
                 var doc = new System.Xml.XmlDocument();
                 doc.LoadXml(ctx.HttpResponseString);
-                var return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
-                if (return_code == "SUCCESS")
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
                 {
-                    var result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
-                    if (result_code == "SUCCESS")
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
+                    res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                    res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
+                    res.sign = doc.GetElementsByTagName("sign")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
                     {
-                        var req = (Request.UnifiedOrderRequest)ctx.Request;
-                        var res = new Response.UnifiedOrderResponse();
-                        res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
-                        res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
                         res.trade_type = doc.GetElementsByTagName("trade_type")[0].InnerText.Trim();
                         res.prepay_id = doc.GetElementsByTagName("prepay_id")[0].InnerText.Trim();
                         res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
@@ -255,7 +255,8 @@ namespace Wlniao.WeAPP
                 }
                 else
                 {
-                    ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim() };
+                    res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                    ctx.Response = new Error() { errmsg = res.return_msg };
                 }
             }
             catch (Exception ex)
@@ -265,6 +266,166 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
+        #region OrderQuery
+        private void OrderQueryEncode(Context ctx)
+        {
+            var req = (Request.OrderQueryRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.appid))
+                {
+                    req.appid = ctx.MsAppId;
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Wlniao.Config.GetSetting("MspaySecret");
+                    if (string.IsNullOrEmpty(req.secret))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing secret" };
+                    }
+                }
+                if (string.IsNullOrEmpty(req.mch_id))
+                {
+                    req.mch_id = Wlniao.Config.GetSetting("MspayMchId");
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_id" };
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
+                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("sign_type", req.sign_type));
+                if (string.IsNullOrEmpty(req.transaction_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_trade_no", req.out_trade_no));
+                }
+                else
+                {
+                    kvList.Add(new KeyValuePair<String, String>("transaction_id", req.transaction_id));
+                }
+                kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                var values = new System.Text.StringBuilder();
+                foreach (var kv in kvList)
+                {
+                    if (!string.IsNullOrEmpty(kv.Value))
+                    {
+                        if (values.Length > 0)
+                        {
+                            values.Append("&");
+                        }
+                        values.Append(kv.Key + "=" + kv.Value);
+                    }
+                }
+                values.Append("&key=" + req.secret);
+                //生成sig
+                byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                foreach (byte b in md5_result)
+                {
+                    sig_builder.Append(b.ToString("x2"));
+                }
+                kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+                #endregion
+
+                #region 生成POST数据
+                var sb = new System.Text.StringBuilder();
+                sb.Append("<xml>");
+                foreach (var kv in kvList)
+                {
+                    if (string.IsNullOrEmpty(kv.Value))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                    }
+                }
+                sb.Append("</xml>");
+                #endregion
+
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = sb.ToString();
+                ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
+                ctx.RequestUrl = "pay/orderquery";
+            }
+        }
+        private void OrderQueryDecode(Context ctx)
+        {
+            try
+            {
+                var req = (Request.OrderQueryRequest)ctx.Request;
+                var res = new Response.OrderQueryResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
+                    res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                    res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
+                    res.sign = doc.GetElementsByTagName("sign")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.trade_state = doc.GetElementsByTagName("trade_state")[0].InnerText.Trim();
+                        res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
+                        if (res.trade_state == "SUCCESS")
+                        {
+                            res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim();
+                            res.trade_type = doc.GetElementsByTagName("trade_type")[0].InnerText.Trim();
+                            res.bank_type = doc.GetElementsByTagName("bank_type")[0].InnerText.Trim();
+                            res.total_fee = cvt.ToInt(doc.GetElementsByTagName("total_fee")[0].InnerText.Trim());
+                            res.cash_fee = cvt.ToInt(doc.GetElementsByTagName("cash_fee")[0].InnerText.Trim());
+                            res.transaction_id = doc.GetElementsByTagName("transaction_id")[0].InnerText.Trim();
+                            res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
+                            res.time_end = doc.GetElementsByTagName("time_end")[0].InnerText.Trim();
+
+                            try { res.device_info = doc.GetElementsByTagName("device_info")[0].InnerText.Trim(); } catch { }
+                            try { res.is_subscribe = doc.GetElementsByTagName("is_subscribe")[0].InnerText.Trim(); } catch { }
+                            try { res.fee_type = doc.GetElementsByTagName("fee_type")[0].InnerText.Trim(); } catch { }
+                            try { res.trade_state_desc = doc.GetElementsByTagName("trade_state_desc")[0].InnerText.Trim(); } catch { }
+                            try { res.settlement_total_fee = cvt.ToInt(doc.GetElementsByTagName("settlement_total_fee")[0].InnerText.Trim()); } catch { }
+                            try
+                            {
+                                var t = new DateTime(int.Parse(res.time_end.Substring(0, 4)), int.Parse(res.time_end.Substring(4, 2)), int.Parse(res.time_end.Substring(6, 2)), int.Parse(res.time_end.Substring(8, 2)), int.Parse(res.time_end.Substring(10, 2)), int.Parse(res.time_end.Substring(12, 2)), DateTimeKind.Utc).AddHours(-8);
+                                res.paytime = DateTools.GetUnix(t);
+                            }
+                            catch { res.paytime = DateTools.GetUnix(); }
+                        }
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
+                        }
+                        catch
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                        }
+                    }
+                }
+                else if (string.IsNullOrEmpty(res.err_code))
+                {
+                    ctx.Response = new Error() { errmsg = res.err_code_des };
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.err_code };
+                }
+            }
+            catch (Exception ex)
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
 
         #region JsCode2Session
         private void JsCode2SessionEncode(Context ctx)

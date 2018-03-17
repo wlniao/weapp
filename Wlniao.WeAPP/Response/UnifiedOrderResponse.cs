@@ -8,6 +8,18 @@ namespace Wlniao.WeAPP.Response
     public class UnifiedOrderResponse : Wlniao.Handler.IResponse
     {
         /// <summary>
+        /// 返回状态码
+        /// </summary>
+        /// <remarks>SUCCESS/FAIL 此字段是通信标识，非交易标识，交易是否成功需要查看trade_state来判断</remarks>
+        public string return_code { get; set; }
+        /// <summary>
+        /// 返回信息 
+        /// </summary>
+        /// <remarks>返回信息，如非空，为错误原因</remarks>
+        public string return_msg { get; set; }
+
+
+        /// <summary>
         /// 小程序ID
         /// </summary>
         /// <remarks>微信分配的小程序ID</remarks>
@@ -17,6 +29,32 @@ namespace Wlniao.WeAPP.Response
         /// </summary>
         /// <remarks>微信支付分配的商户号</remarks>
         public string mch_id { get; set; }
+        /// <summary>
+        /// 随机字符串
+        /// </summary>
+        /// <remarks>微信返回的随机字符串</remarks>
+        public string nonce_str { get; set; }
+        /// <summary>
+        /// 签名 
+        /// </summary>
+        public string sign { get; set; }
+        /// <summary>
+        /// 业务结果
+        /// </summary>
+        /// <remarks>SUCCESS/FAIL</remarks>
+        public string result_code { get; set; }
+        /// <summary>
+        /// 错误代码
+        /// </summary>
+        /// <remarks>错误码</remarks>
+        public string err_code { get; set; }
+        /// <summary>
+        /// 错误代码描述 
+        /// </summary>
+        /// <remarks>结果信息描述</remarks>
+        public string err_code_des { get; set; }
+
+
         /// <summary>
         /// 交易类型
         /// </summary>
@@ -32,11 +70,6 @@ namespace Wlniao.WeAPP.Response
         /// <remarks>trade_type为NATIVE时有返回，用于生成二维码，展示给用户进行扫码支付</remarks>
         public string code_url { get; set; }
         /// <summary>
-        /// 随机字符串
-        /// </summary>
-        /// <remarks>微信返回的随机字符串</remarks>
-        public string nonce_str { get; set; }
-        /// <summary>
         /// 时间戳
         /// </summary>
         /// <remarks>时间戳从1970年1月1日00:00:00至今的秒数,即当前的时间</remarks>
@@ -46,19 +79,14 @@ namespace Wlniao.WeAPP.Response
         /// </summary>
         /// <remarks>签名类型，默认为MD5，支持HMAC-SHA256和MD5。注意此处需与统一下单的签名类型一致</remarks>
         public string signType { get; set; }
-
-
-
         /// <summary>
         /// 小程序调起支付数据签名
         /// </summary>
-        /// <returns></returns>
         public string paySign { get; set; }
+
         /// <summary>
-        /// 小程序微信支付调起参数
+        /// 小程序支付调起参数
         /// </summary>
-        /// <param name=""></param>
-        /// <returns></returns>
         public object PayRequet
         {
             get
