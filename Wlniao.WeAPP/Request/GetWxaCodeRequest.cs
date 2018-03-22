@@ -25,10 +25,22 @@ namespace Wlniao.WeAPP.Request
         /// </summary>
         public Color line_color { get; set; }
 
+        /// <summary>
+        /// RGB颜色
+        /// </summary>
         public class Color
         {
+            /// <summary>
+            /// 
+            /// </summary>
             public int r { get; set; }
+            /// <summary>
+            /// 
+            /// </summary>
             public int g { get; set; }
+            /// <summary>
+            /// 
+            /// </summary>
             public int b { get; set; }
         }
     }

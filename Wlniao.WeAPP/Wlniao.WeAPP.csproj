@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <Description>WeAPP Extend for Wlniao.XCore</Description>
-    <Copyright>Copyright 2017 XieChaoyi</Copyright>
+    <Copyright>Copyright 2017 Wlniao</Copyright>
     <VersionPrefix>1.6.5</VersionPrefix>
-    <Authors>Wlniao</Authors>
+    <Authors>Chaoyi Xie</Authors>
     <RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0</TargetFrameworks>
     <AssemblyName>Wlniao.WeAPP</AssemblyName>
@@ -14,12 +14,12 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PackageId>Wlniao.WeAPP</PackageId>
-    <Version>0.0.6</Version>
+    <Version>0.0.7</Version>
     <RootNamespace>Wlniao.WeAPP</RootNamespace>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
     <PackageIconUrl>https://static.wlniao.com/wlniao/logo.png</PackageIconUrl>
-    <PackageProjectUrl>https://www.wlniao.com</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/wlniao/weapp</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
@@ -43,7 +43,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="2.0.5" />
+    <PackageReference Include="Wlniao.XCore" Version="2.0.6" />
   </ItemGroup>
 
 </Project>

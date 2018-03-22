@@ -15,7 +15,7 @@ namespace Wlniao.WeAPP.Response
         /// <summary>
         /// 返回信息 
         /// </summary>
-        /// <remarks>返回信息，如非空，为错误原因/remarks>
+        /// <remarks>返回信息，如非空，为错误原因</remarks>
         public string return_msg { get; set; }
 
 

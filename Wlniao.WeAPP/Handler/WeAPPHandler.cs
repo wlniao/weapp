@@ -259,7 +259,7 @@ namespace Wlniao.WeAPP
                     ctx.Response = new Error() { errmsg = res.return_msg };
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 ctx.Response = new Error() { errmsg = "InvalidXmlString" };
             }
@@ -420,7 +420,7 @@ namespace Wlniao.WeAPP
                     ctx.Response = new Error() { errmsg = res.err_code };
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 ctx.Response = new Error() { errmsg = "InvalidXmlString" };
             }
