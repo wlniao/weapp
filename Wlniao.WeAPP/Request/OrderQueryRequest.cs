@@ -10,19 +10,29 @@ namespace Wlniao.WeAPP.Request
         private string _sign_type = "";
 
         /// <summary>
-        /// 小程序ID
+        /// 小程序/服务商ID
         /// </summary>
-        /// <remarks>微信分配的小程序ID</remarks>
+        /// <remarks>微信分配的小程序ID或服务商公众账号ID</remarks>
         public string appid { get; set; }
         /// <summary>
-        /// 小程序的 app secret
+        /// 小程序或服务商的 app secret
         /// </summary>
         public string secret { get; set; }
         /// <summary>
-        /// 商户号
+        /// 小程序的APPID（服务商模式下需要）
+        /// </summary>
+        /// <remarks>当前调起支付的小程序APPID</remarks>
+        public string sub_appid { get; set; }
+        /// <summary>
+        /// 商户号（服务商模式下为服务商商户号）
         /// </summary>
         /// <remarks>微信支付分配的商户号</remarks>
         public string mch_id { get; set; }
+        /// <summary>
+        /// 子商户号（服务商模式下需要）
+        /// </summary>
+        /// <remarks>微信支付分配的子商户号</remarks>
+        public string sub_mch_id { get; set; }
         /// <summary>
         /// 微信订单号
         /// </summary>

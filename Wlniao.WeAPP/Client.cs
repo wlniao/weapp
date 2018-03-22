@@ -12,34 +12,95 @@ namespace Wlniao.WeAPP
     public class Client : Wlniao.Handler.IClient
     {
         #region 微信小程序特定配置信息
-        internal static string _MsAppId = null;
-        internal static string _MsAppSecret = null;
+        internal const string WLN_WX_SVR_PAYID = "1293401101";
+        internal static string _WxAppId = null;
+        internal static string _WxAppSecret = null;
+        internal static string _WxPayId = null;
+        internal static string _WxPaySecret = null;
+        internal static string _WxSvrId = null;
+        internal static string _WxSvrPayId = null;
         /// <summary>
-        /// 
+        /// 小程序/公众号Id
         /// </summary>
-        public static string CfgMsAppId
+        public static string CfgWxAppId
         {
             get
             {
-                if (_MsAppId == null)
+                if (_WxAppId == null)
                 {
-                    _MsAppId = Config.GetSetting("MsAppId");
+                    _WxAppId = Config.GetSetting("WxAppId");
                 }
-                return _MsAppId;
+                return _WxAppId;
             }
         }
         /// <summary>
-        /// 
+        /// 小程序/公众号密钥
         /// </summary>
-        public static string CfgMsAppSecret
+        public static string CfgWxAppSecret
         {
             get
             {
-                if (_MsAppSecret == null)
+                if (_WxAppSecret == null)
                 {
-                    _MsAppSecret = Config.GetSetting("MsAppSecret");
+                    _WxAppSecret = Config.GetSetting("WxAppSecret");
                 }
-                return _MsAppSecret;
+                return _WxAppSecret;
+            }
+        }
+        /// <summary>
+        /// 微信支付商户号
+        /// </summary>
+        public static string CfgWxPayId
+        {
+            get
+            {
+                if (_WxPayId == null)
+                {
+                    _WxPayId = Config.GetSetting("WxPayId");
+                }
+                return _WxPayId;
+            }
+        }
+        /// <summary>
+        /// 微信支付密钥（服务商模式为服务商密钥）
+        /// </summary>
+        public static string CfgWxPaySecret
+        {
+            get
+            {
+                if (_WxPaySecret == null)
+                {
+                    _WxPaySecret = Config.GetSetting("WxPaySecret");
+                }
+                return _WxPaySecret;
+            }
+        }
+        /// <summary>
+        /// 微信服务商公众号Id
+        /// </summary>
+        public static string CfgWxSvrId
+        {
+            get
+            {
+                if (_WxSvrId == null)
+                {
+                    _WxSvrId = Config.GetSetting("WxSvrId");
+                }
+                return _WxSvrId;
+            }
+        }
+        /// <summary>
+        /// 微信服务商商户号
+        /// </summary>
+        public static string CfgWxSvrPayId
+        {
+            get
+            {
+                if (_WxSvrPayId == null)
+                {
+                    _WxSvrPayId = Config.GetSetting("WxSvrPayId");
+                }
+                return _WxSvrPayId;
             }
         }
         #endregion
@@ -47,11 +108,11 @@ namespace Wlniao.WeAPP
         /// <summary>
         /// 小程序ID
         /// </summary>
-        public string MsAppId { get; set; }
+        public string WxAppId { get; set; }
         /// <summary>
         /// 小程序密钥
         /// </summary>
-        public string MsAppSecret { get; set; }
+        public string WxAppSecret { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -61,17 +122,17 @@ namespace Wlniao.WeAPP
         /// </summary>
         public Client()
         {
-            this.MsAppId = CfgMsAppId;
-            this.MsAppSecret = CfgMsAppSecret;
+            this.WxAppId = CfgWxAppId;
+            this.WxAppSecret = CfgWxAppSecret;
             handler = new Handler();
         }
         /// <summary>
         /// 
         /// </summary>
-        public Client(String MsAppId, String MsAppSecret)
+        public Client(String AppId, String AppSecret)
         {
-            this.MsAppId = MsAppId;
-            this.MsAppSecret = MsAppSecret;
+            this.WxAppId = AppId;
+            this.WxAppSecret = AppSecret;
             handler = new Handler();
         }
 
@@ -86,8 +147,8 @@ namespace Wlniao.WeAPP
             }
 
             var ctx = new Context();
-            ctx.MsAppId = MsAppId;
-            ctx.MsAppSecret = MsAppSecret;
+            ctx.AppId = WxAppId;
+            ctx.AppSecret = WxAppSecret;
             ctx.Method = method == null ? System.Net.Http.HttpMethod.Get : method;
             ctx.Operation = operation;
             ctx.Request = request;

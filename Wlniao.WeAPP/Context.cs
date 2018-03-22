@@ -12,11 +12,11 @@ namespace Wlniao.WeAPP
         /// <summary>
         /// 小程序ID
         /// </summary>
-        public string MsAppId { get; set; }
+        public string AppId { get; set; }
         /// <summary>
         /// 小程序密钥
         /// </summary>
-        public string MsAppSecret { get; set; }
+        public string AppSecret { get; set; }
         /// <summary>
         /// 接口调用凭据
         /// </summary>

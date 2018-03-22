@@ -72,7 +72,7 @@ namespace Wlniao.WeAPP
         {
             if (string.IsNullOrEmpty(ctx.AccessToken))
             {
-                var rlt = Wlniao.OpenApi.Wx.GetAccessToken(ctx.MsAppId, ctx.MsAppSecret);
+                var rlt = Wlniao.OpenApi.Wx.GetAccessToken(ctx.AppId, ctx.AppSecret);
                 if (rlt.success)
                 {
                     ctx.AccessToken = rlt.data;
@@ -111,19 +111,36 @@ namespace Wlniao.WeAPP
             {
                 if (string.IsNullOrEmpty(req.appid))
                 {
-                    req.appid = ctx.MsAppId;
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.appid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.appid = Client.CfgWxSvrId;
+                        req.sub_appid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
+                    }
                 }
                 if (string.IsNullOrEmpty(req.secret))
                 {
-                    req.secret = Wlniao.Config.GetSetting("MspaySecret");
-                    if (string.IsNullOrEmpty(req.secret))
-                    {
-                        ctx.Response = new Error() { errmsg = "missing secret" };
-                    }
+                    req.secret = Client.CfgWxPaySecret;
                 }
                 if (string.IsNullOrEmpty(req.mch_id))
                 {
-                    req.mch_id = Wlniao.Config.GetSetting("MspayMchId");
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                    }
                     if (string.IsNullOrEmpty(req.mch_id))
                     {
                         ctx.Response = new Error() { errmsg = "missing mch_id" };
@@ -134,6 +151,14 @@ namespace Wlniao.WeAPP
                 var kvList = new List<KeyValuePair<String, String>>();
                 kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
                 kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.sub_appid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_appid", req.sub_appid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                }
                 kvList.Add(new KeyValuePair<String, String>("device_info", req.device_info));
                 kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
                 kvList.Add(new KeyValuePair<String, String>("body", req.body));
@@ -165,8 +190,16 @@ namespace Wlniao.WeAPP
                 }
                 if (!string.IsNullOrEmpty(req.openid))
                 {
-                    kvList.Add(new KeyValuePair<String, String>("openid", req.openid));
+                    if (string.IsNullOrEmpty(req.sub_appid))
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("openid", req.openid));
+                    }
+                    else
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("sub_openid", req.openid));
+                    }
                 }
+
                 kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
                 var values = new System.Text.StringBuilder();
                 foreach (var kv in kvList)
@@ -180,15 +213,32 @@ namespace Wlniao.WeAPP
                         values.Append(kv.Key + "=" + kv.Value);
                     }
                 }
-                values.Append("&key=" + req.secret);
-                //生成sig
-                byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
-                System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
                 {
-                    sig_builder.Append(b.ToString("x2"));
+                    //通过OpenApi在线签名
+                    var rlt = Wlniao.OpenApi.Common.Post<String>("cashier", "wxsign", values.ToString(), new KeyValuePair<string, string>("sign_type", req.sign_type));
+                    if (rlt.success)
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("sign", rlt.data));
+                    }
+                    else
+                    {
+                        ctx.Response = new Error() { errmsg = rlt.message };
+                        return;
+                    }
                 }
-                kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+                else
+                {
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+                }
                 #endregion
 
                 #region 生成POST数据
@@ -223,6 +273,7 @@ namespace Wlniao.WeAPP
                 var doc = new System.Xml.XmlDocument();
                 doc.LoadXml(ctx.HttpResponseString);
                 res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
                 if (res.return_code == "SUCCESS")
                 {
                     res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
@@ -238,7 +289,24 @@ namespace Wlniao.WeAPP
                         res.code_url = res.trade_type != "NATIVE" ? "" : doc.GetElementsByTagName("code_url")[0].InnerText.Trim();
                         res.timeStamp = DateTools.GetUnix().ToString();
                         res.signType = req.sign_type;
-                        res.paySign = Encryptor.Md5Encryptor32("appId=" + res.appid + "&nonceStr=" + res.nonce_str + "&package=prepay_id=" + res.prepay_id + "&signType=" + res.signType + "&timeStamp=" + res.timeStamp + "&key=" + req.secret);
+                        var str = "appId=" + res.appid + "&nonceStr=" + res.nonce_str + "&package=prepay_id=" + res.prepay_id + "&signType=" + res.signType + "&timeStamp=" + res.timeStamp;
+                        if (req.mch_id == Client.WLN_WX_SVR_PAYID)
+                        {
+                            //通过OpenApi在线签名
+                            var rlt = Wlniao.OpenApi.Common.Post<String>("cashier", "wxsign", str, new KeyValuePair<string, string>("sign_type", req.sign_type));
+                            if (rlt.success)
+                            {
+                                res.paySign = rlt.data;
+                            }
+                            else
+                            {
+                                ctx.Response = new Error() { errmsg = rlt.message };
+                            }
+                        }
+                        else
+                        {
+                            res.paySign = Encryptor.Md5Encryptor32(str + "&key=" + req.secret);
+                        }
                         ctx.Response = res;
                     }
                     else
@@ -255,7 +323,6 @@ namespace Wlniao.WeAPP
                 }
                 else
                 {
-                    res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
                     ctx.Response = new Error() { errmsg = res.return_msg };
                 }
             }
@@ -274,11 +341,23 @@ namespace Wlniao.WeAPP
             {
                 if (string.IsNullOrEmpty(req.appid))
                 {
-                    req.appid = ctx.MsAppId;
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.appid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.appid = Client.CfgWxSvrId;
+                        req.sub_appid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                    }
                 }
                 if (string.IsNullOrEmpty(req.secret))
                 {
-                    req.secret = Wlniao.Config.GetSetting("MspaySecret");
+                    req.secret = Client.CfgWxPaySecret;
                     if (string.IsNullOrEmpty(req.secret))
                     {
                         ctx.Response = new Error() { errmsg = "missing secret" };
@@ -286,7 +365,15 @@ namespace Wlniao.WeAPP
                 }
                 if (string.IsNullOrEmpty(req.mch_id))
                 {
-                    req.mch_id = Wlniao.Config.GetSetting("MspayMchId");
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                    }
                     if (string.IsNullOrEmpty(req.mch_id))
                     {
                         ctx.Response = new Error() { errmsg = "missing mch_id" };
@@ -297,6 +384,14 @@ namespace Wlniao.WeAPP
                 var kvList = new List<KeyValuePair<String, String>>();
                 kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
                 kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.sub_appid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_appid", req.sub_appid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                }
                 kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
                 kvList.Add(new KeyValuePair<String, String>("sign_type", req.sign_type));
                 if (string.IsNullOrEmpty(req.transaction_id))
@@ -307,28 +402,45 @@ namespace Wlniao.WeAPP
                 {
                     kvList.Add(new KeyValuePair<String, String>("transaction_id", req.transaction_id));
                 }
-                kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
-                var values = new System.Text.StringBuilder();
-                foreach (var kv in kvList)
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
                 {
-                    if (!string.IsNullOrEmpty(kv.Value))
+                    //通过OpenApi在线签名
+                    var rlt = Wlniao.OpenApi.Common.Post<String>("cashier", "wxapisign", JsonConvert.SerializeObject(kvList), new KeyValuePair<string, string>("sign_type", req.sign_type));
+                    if (rlt.success)
                     {
-                        if (values.Length > 0)
-                        {
-                            values.Append("&");
-                        }
-                        values.Append(kv.Key + "=" + kv.Value);
+                        kvList.Add(new KeyValuePair<String, String>("sign", rlt.data));
+                    }
+                    else
+                    {
+                        ctx.Response = new Error() { errmsg = rlt.message };
+                        return;
                     }
                 }
-                values.Append("&key=" + req.secret);
-                //生成sig
-                byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
-                System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
-                foreach (byte b in md5_result)
+                else
                 {
-                    sig_builder.Append(b.ToString("x2"));
+                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    var values = new System.Text.StringBuilder();
+                    foreach (var kv in kvList)
+                    {
+                        if (!string.IsNullOrEmpty(kv.Value))
+                        {
+                            if (values.Length > 0)
+                            {
+                                values.Append("&");
+                            }
+                            values.Append(kv.Key + "=" + kv.Value);
+                        }
+                    }
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
                 }
-                kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
                 #endregion
 
                 #region 生成POST数据
@@ -363,6 +475,7 @@ namespace Wlniao.WeAPP
                 var doc = new System.Xml.XmlDocument();
                 doc.LoadXml(ctx.HttpResponseString);
                 res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
                 if (res.return_code == "SUCCESS")
                 {
                     res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
@@ -411,13 +524,9 @@ namespace Wlniao.WeAPP
                         }
                     }
                 }
-                else if (string.IsNullOrEmpty(res.err_code))
-                {
-                    ctx.Response = new Error() { errmsg = res.err_code_des };
-                }
                 else
                 {
-                    ctx.Response = new Error() { errmsg = res.err_code };
+                    ctx.Response = new Error() { errmsg = res.return_msg };
                 }
             }
             catch
@@ -435,11 +544,11 @@ namespace Wlniao.WeAPP
             {
                 if (string.IsNullOrEmpty(req.appid))
                 {
-                    req.appid = ctx.MsAppId;
+                    req.appid = ctx.AppId;
                 }
                 if (string.IsNullOrEmpty(req.secret))
                 {
-                    req.secret = ctx.MsAppSecret;
+                    req.secret = ctx.AppSecret;
                 }
                 ctx.RequestUrl = "/sns/jscode2session"
                     + "?appid=" + req.appid
