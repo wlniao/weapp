@@ -283,43 +283,161 @@ namespace Wlniao.WeAPP
         }
         #endregion 
 
-        #region OrderQuery 小程序支付统一下单
+        #region SendRedpack 发送现金红包
         /// <summary>
-        /// 微信支付订单查询
+        /// 发送现金红包
         /// </summary>
-        public ApiResult<OrderQueryResponse> OrderQuery(OrderQueryRequest request)
+        public ApiResult<SendRedpackResponse> SendRedpack(SendRedpackRequest request)
         {
             if (request == null)
             {
-                return new ApiResult<OrderQueryResponse>() { message = "require parameters" };
+                return new ApiResult<SendRedpackResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.mch_billno))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing mch_billno" };
+            }
+            else if (string.IsNullOrEmpty(request.send_name))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing send_name" };
+            }
+            else if (string.IsNullOrEmpty(request.act_name))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing act_name" };
+            }
+            else if (string.IsNullOrEmpty(request.wishing))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing wishing" };
+            }
+            else if (string.IsNullOrEmpty(request.remark))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing remark" };
+            }
+            else if (request.total_amount <= 0)
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing total_amount" };
+            }
+            else if (string.IsNullOrEmpty(request.client_ip))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing client_ip" };
+            }
+            else if (string.IsNullOrEmpty(request.re_openid))
+            {
+                return new ApiResult<SendRedpackResponse>() { message = "missing re_openid" };
+            }
+            return GetResponseFromAsyncTask(SendRedpackAsync(request));
+        }
+        /// <summary>
+        /// 发送现金红包
+        /// </summary>
+        /// <param name="billno"></param>
+        /// <param name="amount"></param>
+        /// <param name="openid"></param>
+        /// <param name="act_name"></param>
+        /// <param name="send_name"></param>
+        /// <param name="wishing"></param>
+        /// <param name="remark"></param>
+        /// <returns></returns>
+        public ApiResult<SendRedpackResponse> SendRedpack(String billno, Int32 amount, String openid
+            , String act_name, String send_name, String wishing, String remark)
+        {
+            var request = new SendRedpackRequest();
+            request.mch_billno = billno;
+            request.total_amount = amount;
+            request.re_openid = openid;
+            request.act_name = act_name;
+            request.send_name = send_name;
+            request.wishing = wishing;
+            request.remark = remark;
+            return GetResponseFromAsyncTask(SendRedpackAsync(request));
+        }
+
+        /// <summary>
+        /// 小程序支付统一下单 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<SendRedpackResponse>> SendRedpackAsync(SendRedpackRequest request)
+        {
+            return CallAsync<SendRedpackRequest, SendRedpackResponse>("sendredpack", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
+        #region QueryOrder 微信支付订单统一查询
+        /// <summary>
+        /// 微信支付订单查询
+        /// </summary>
+        public ApiResult<QueryOrderResponse> QueryOrder(QueryOrderRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<QueryOrderResponse>() { message = "require parameters" };
             }
             else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
             {
-                return new ApiResult<OrderQueryResponse>() { message = "missing transaction_id or out_trade_no" };
+                return new ApiResult<QueryOrderResponse>() { message = "missing transaction_id or out_trade_no" };
             }
-            return GetResponseFromAsyncTask(OrderQueryAsync(request));
+            return GetResponseFromAsyncTask(QueryOrderAsync(request));
         }
         /// <summary>
         /// 微信支付订单查询
         /// </summary>
         /// <param name="out_trade_no"></param>
         /// <returns></returns>
-        public ApiResult<OrderQueryResponse> OrderQuery(String out_trade_no)
+        public ApiResult<QueryOrderResponse> QueryOrder(String out_trade_no)
         {
-            var request = new OrderQueryRequest();
+            var request = new QueryOrderRequest();
             request.out_trade_no = out_trade_no;
-            return GetResponseFromAsyncTask(OrderQueryAsync(request));
+            return GetResponseFromAsyncTask(QueryOrderAsync(request));
         }
         /// <summary>
         /// 微信支付订单查询 的异步形式。
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task<ApiResult<OrderQueryResponse>> OrderQueryAsync(OrderQueryRequest request)
+        public Task<ApiResult<QueryOrderResponse>> QueryOrderAsync(QueryOrderRequest request)
         {
-            return CallAsync<OrderQueryRequest, OrderQueryResponse>("orderquery", request, System.Net.Http.HttpMethod.Get);
+            return CallAsync<QueryOrderRequest, QueryOrderResponse>("queryorder", request, System.Net.Http.HttpMethod.Get);
         }
-        #endregion 
+        #endregion
+
+        #region QueryRedpack 微信现金红包查询
+        /// <summary>
+        /// 微信现金红包查询
+        /// </summary>
+        public ApiResult<QueryRedpackResponse> QueryRedpack(QueryRedpackRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<QueryRedpackResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.mch_billno) && string.IsNullOrEmpty(request.mch_billno))
+            {
+                return new ApiResult<QueryRedpackResponse>() { message = "missing mch_billno" };
+            }
+            return GetResponseFromAsyncTask(QueryRedpackAsync(request));
+        }
+        /// <summary>
+        /// 微信现金红包查询
+        /// </summary>
+        /// <param name="mch_billno"></param>
+        /// <returns></returns>
+        public ApiResult<QueryRedpackResponse> QueryRedpack(String mch_billno)
+        {
+            var request = new QueryRedpackRequest();
+            request.mch_billno = mch_billno;
+            return GetResponseFromAsyncTask(QueryRedpackAsync(request));
+        }
+        /// <summary>
+        /// 微信现金红包查询 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<QueryRedpackResponse>> QueryRedpackAsync(QueryRedpackRequest request)
+        {
+            return CallAsync<QueryRedpackRequest, QueryRedpackResponse>("queryredpack", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion
 
 
 

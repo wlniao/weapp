@@ -5,7 +5,7 @@ namespace Wlniao.WeAPP.Response
     /// <summary>
     /// 微信支付订单查询的输出内容
     /// </summary>
-    public class OrderQueryResponse : Wlniao.Handler.IResponse
+    public class QueryOrderResponse : Wlniao.Handler.IResponse
     {
         /// <summary>
         /// 返回状态码

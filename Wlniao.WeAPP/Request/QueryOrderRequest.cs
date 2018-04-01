@@ -5,7 +5,7 @@ namespace Wlniao.WeAPP.Request
     /// <summary>
     /// 微信支付订单查询的请求参数
     /// </summary>
-    public class OrderQueryRequest : Wlniao.Handler.IRequest
+    public class QueryOrderRequest : Wlniao.Handler.IRequest
     {
         private string _sign_type = "";
 
