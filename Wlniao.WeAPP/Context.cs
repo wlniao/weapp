@@ -30,9 +30,13 @@ namespace Wlniao.WeAPP
         /// </summary>
         public string Operation { get; set; }
         /// <summary>
-        /// 要调用的URL
+        /// 请求的地址
         /// </summary>
-        public string RequestUrl { get; set; }
+        public string RequestHost { get; set; }
+        /// <summary>
+        /// 要调用的路径
+        /// </summary>
+        public string RequestPath { get; set; }
         /// <summary>
         /// 要发送的请求内容
         /// </summary>
@@ -46,9 +50,9 @@ namespace Wlniao.WeAPP
         /// </summary>
         public Task<System.Net.Http.HttpResponseMessage> HttpTask;
         /// <summary>
-        /// Http客户端
+        /// 请求使用的证书
         /// </summary>
-        public System.Net.Http.HttpClient HttpClient;
+        public System.Security.Cryptography.X509Certificates.X509Certificate Certificate;
         /// <summary>
         /// 输出的状态
         /// </summary>

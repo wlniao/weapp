@@ -46,9 +46,9 @@ namespace Wlniao.WeAPP
         {
             var _ctx = (Context)ctx;
             EncoderMap[_ctx.Operation](_ctx);
-            if (string.IsNullOrEmpty(_ctx.RequestUrl))
+            if (string.IsNullOrEmpty(_ctx.RequestPath))
             {
-                _ctx.RequestUrl = _ctx.Operation;
+                _ctx.RequestPath = _ctx.Operation;
             }
             inner.HandleBefore(ctx);
         }
@@ -90,7 +90,7 @@ namespace Wlniao.WeAPP
             {
                 ctx.Method = System.Net.Http.HttpMethod.Post;
                 ctx.HttpRequestString = JsonConvert.SerializeObject(ctx.Request);
-                ctx.RequestUrl = "/wxa/getwxacode"
+                ctx.RequestPath = "/wxa/getwxacode"
                     + "?access_token=" + ctx.AccessToken;
             }
         }
@@ -264,8 +264,8 @@ namespace Wlniao.WeAPP
 
                 ctx.Method = System.Net.Http.HttpMethod.Post;
                 ctx.HttpRequestString = sb.ToString();
-                ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
-                ctx.RequestUrl = "pay/unifiedorder";
+                ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                ctx.RequestPath = "pay/unifiedorder";
             }
         }
         private void UnifiedOrderDecode(Context ctx)
@@ -423,8 +423,8 @@ namespace Wlniao.WeAPP
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
-                    ctx.HttpClient.BaseAddress = new Uri("https://openapi.wlniao.com");
-                    ctx.RequestUrl = "cashier/sendredpack";
+                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestPath = "cashier/sendredpack";
                 }
                 else
                 {
@@ -478,8 +478,8 @@ namespace Wlniao.WeAPP
 
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = sb.ToString();
-                    ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
-                    ctx.RequestUrl = "mmpaymkttransfers/sendredpack";
+                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                    ctx.RequestPath = "mmpaymkttransfers/sendredpack";
                 }
                 #endregion
             }
@@ -548,7 +548,7 @@ namespace Wlniao.WeAPP
                         req.appid = Client.CfgWxSvrId;
                         req.sub_appid = Client.CfgWxAppId;
                     }
-                    if (string.IsNullOrEmpty(req.mch_id))
+                    if (string.IsNullOrEmpty(req.appid))
                     {
                         ctx.Response = new Error() { errmsg = "missing appid" };
                     }
@@ -660,8 +660,8 @@ namespace Wlniao.WeAPP
 
                 ctx.Method = System.Net.Http.HttpMethod.Post;
                 ctx.HttpRequestString = sb.ToString();
-                ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
-                ctx.RequestUrl = "pay/orderquery";
+                ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                ctx.RequestPath = "pay/orderquery";
             }
         }
         private void QueryOrderDecode(Context ctx)
@@ -750,7 +750,7 @@ namespace Wlniao.WeAPP
                     {
                         req.appid = Client.CfgWxSvrId;
                     }
-                    if (string.IsNullOrEmpty(req.mch_id))
+                    if (string.IsNullOrEmpty(req.appid))
                     {
                         ctx.Response = new Error() { errmsg = "missing appid" };
                     }
@@ -791,56 +791,69 @@ namespace Wlniao.WeAPP
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
-                    ctx.HttpClient.BaseAddress = new Uri("https://openapi.wlniao.com");
-                    ctx.RequestUrl = "cashier/queryredpack";
+                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestPath = "cashier/queryredpack";
                 }
                 else
                 {
-                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
-                    var values = new System.Text.StringBuilder();
-                    foreach (var kv in kvList)
+                    var cerPath = Wlniao.IO.PathTool.Map(req.mch_id + ".p12");
+                    if (file.Exists(cerPath))
                     {
-                        if (!string.IsNullOrEmpty(kv.Value))
+                        ctx.Certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(cerPath, req.mch_id);
+
+                        kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                        var values = new System.Text.StringBuilder();
+                        foreach (var kv in kvList)
                         {
-                            if (values.Length > 0)
+                            if (!string.IsNullOrEmpty(kv.Value))
                             {
-                                values.Append("&");
+                                if (values.Length > 0)
+                                {
+                                    values.Append("&");
+                                }
+                                values.Append(kv.Key + "=" + kv.Value);
                             }
-                            values.Append(kv.Key + "=" + kv.Value);
                         }
-                    }
-                    values.Append("&key=" + req.secret);
-                    //生成sig
-                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
-                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
-                    foreach (byte b in md5_result)
-                    {
-                        sig_builder.Append(b.ToString("x2"));
-                    }
-                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
-
-
-                    #region 生成POST数据
-                    var sb = new System.Text.StringBuilder();
-                    sb.Append("<xml>");
-                    foreach (var kv in kvList)
-                    {
-                        if (string.IsNullOrEmpty(kv.Value))
+                        values.Append("&key=" + req.secret);
+                        //生成sig
+                        byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                        System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                        foreach (byte b in md5_result)
                         {
-                            continue;
+                            sig_builder.Append(b.ToString("x2"));
                         }
-                        else
-                        {
-                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
-                        }
-                    }
-                    sb.Append("</xml>");
-                    #endregion
+                        kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
 
-                    ctx.Method = System.Net.Http.HttpMethod.Post;
-                    ctx.HttpRequestString = sb.ToString();
-                    ctx.HttpClient.BaseAddress = new Uri("https://api.mch.weixin.qq.com");
-                    ctx.RequestUrl = "mmpaymkttransfers/gethbinfo";
+
+                        #region 生成POST数据
+                        var sb = new System.Text.StringBuilder();
+                        sb.Append("<xml>");
+                        foreach (var kv in kvList)
+                        {
+                            if (string.IsNullOrEmpty(kv.Value))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                            }
+                        }
+                        sb.Append("</xml>");
+                        #endregion
+
+                        ctx.Method = System.Net.Http.HttpMethod.Post;
+                        ctx.HttpRequestString = sb.ToString();
+                        ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                        ctx.RequestPath = "mmpaymkttransfers/gethbinfo";
+                    }
+                    else
+                    {
+                        log.Error("not found " + cerPath);
+                        ctx.Retry = 999;
+                        ctx.Response = new Error() { errmsg = "cert file not found" };
+                        return;
+                    }
                 }
                 #endregion
             }
@@ -868,9 +881,9 @@ namespace Wlniao.WeAPP
                         res.hb_type = doc.GetElementsByTagName("hb_type")[0].InnerText.Trim();
                         res.total_num = cvt.ToInt(doc.GetElementsByTagName("total_num")[0].InnerText.Trim());
                         res.total_amount = cvt.ToInt(doc.GetElementsByTagName("total_amount")[0].InnerText.Trim());
-                        res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim();
 
 
+                        try { res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim(); } catch { }
                         try { res.act_name = doc.GetElementsByTagName("act_name")[0].InnerText.Trim(); } catch { }
                         try { res.wishing = doc.GetElementsByTagName("wishing")[0].InnerText.Trim(); } catch { }
                         try { res.remark = doc.GetElementsByTagName("remark")[0].InnerText.Trim(); } catch { }
@@ -931,7 +944,7 @@ namespace Wlniao.WeAPP
                 {
                     req.secret = ctx.AppSecret;
                 }
-                ctx.RequestUrl = "/sns/jscode2session"
+                ctx.RequestPath = "/sns/jscode2session"
                     + "?appid=" + req.appid
                     + "&secret=" + req.secret
                     + "&js_code=" + req.js_code

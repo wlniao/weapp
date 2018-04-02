@@ -17,6 +17,29 @@ namespace Wlniao.WeAPP
         public override void HandleBefore(IContext ctx)
         {
             var _ctx = (Context)ctx;
+            if (_ctx.Response != null)
+            {
+                return;
+            }
+            else if (string.IsNullOrEmpty(_ctx.RequestHost))
+            {
+                _ctx.Response = new Error() { errmsg = "request host not set" };
+                return;
+            }
+            System.Net.Http.HttpClient httpclient;
+            if (_ctx.Certificate == null)
+            {
+                httpclient = new System.Net.Http.HttpClient();
+            }
+            else
+            {
+                var handler = new System.Net.Http.HttpClientHandler();
+                handler.ClientCertificateOptions = System.Net.Http.ClientCertificateOption.Manual;
+                handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+                handler.ClientCertificates.Add(_ctx.Certificate);
+                httpclient = new System.Net.Http.HttpClient(handler);
+            }
+            httpclient.BaseAddress = new Uri(_ctx.RequestHost);
             if (_ctx.Method == System.Net.Http.HttpMethod.Post)
             {
                 System.Net.Http.HttpContent content;
@@ -39,11 +62,11 @@ namespace Wlniao.WeAPP
                         content.Headers.Add(item.Key, item.Value);
                     }
                 }
-                _ctx.HttpTask = _ctx.HttpClient.PostAsync(_ctx.RequestUrl, content);
+                _ctx.HttpTask = httpclient.PostAsync(_ctx.RequestPath, content);
             }
             else
             {
-                _ctx.HttpTask = _ctx.HttpClient.GetAsync(_ctx.RequestUrl);
+                _ctx.HttpTask = httpclient.GetAsync(_ctx.RequestPath);
             }
         }
         /// <summary>

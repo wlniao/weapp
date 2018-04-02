@@ -152,22 +152,37 @@ namespace Wlniao.WeAPP
             ctx.Method = method == null ? System.Net.Http.HttpMethod.Get : method;
             ctx.Operation = operation;
             ctx.Request = request;
-            ctx.Response = new TResponse();
-            ctx.HttpClient = new System.Net.Http.HttpClient();
-            ctx.HttpClient.BaseAddress = new Uri("https://api.weixin.qq.com");
+            ctx.RequestHost = "https://api.weixin.qq.com";
 
             handler.HandleBefore(ctx);
-
-            return ctx.HttpTask.ContinueWith((t) =>
+            if (ctx.Response == null)
             {
-                handler.HandleAfter(ctx);
-                if (ctx.Response is Error)
+                return ctx.HttpTask.ContinueWith((t) =>
                 {
-                    var err = (Error)ctx.Response;
-                    return new ApiResult<TResponse>() { success = false, message = err.errmsg, code = err.errcode };
-                }
-                return new ApiResult<TResponse>() { success = true, message = "success", data = (TResponse)ctx.Response };
-            });
+                    handler.HandleAfter(ctx);
+                    if (ctx.Response is Error)
+                    {
+                        var err = (Error)ctx.Response;
+                        return new ApiResult<TResponse>() { success = false, message = err.errmsg, code = err.errcode };
+                    }
+                    return new ApiResult<TResponse>() { success = true, message = "success", data = (TResponse)ctx.Response };
+                });
+            }
+            else
+            {
+                return new Task<ApiResult<TResponse>>(a =>
+                {
+                    if (ctx.Response is Error)
+                    {
+                        var err = (Error)ctx.Response;
+                        return new ApiResult<TResponse>() { success = false, message = err.errmsg, code = err.errcode };
+                    }
+                    else
+                    {
+                        return new ApiResult<TResponse>() { success = true, message = "success", data = (TResponse)ctx.Response };
+                    }
+                }, null);
+            }
         }
         private TResponse GetResponseFromAsyncTask<TResponse>(Task<TResponse> task)
         {
