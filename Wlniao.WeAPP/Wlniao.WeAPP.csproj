@@ -14,7 +14,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PackageId>Wlniao.WeAPP</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <RootNamespace>Wlniao.WeAPP</RootNamespace>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
@@ -25,25 +25,19 @@
   
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.0\Wlniao.WeAPP.xml</DocumentationFile>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <WarningLevel>3</WarningLevel>
-    <OutputPath>bin\Debug</OutputPath>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard2.0\Wlniao.XCore.MongoDB.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netstandard2.0\Wlniao.WeAPP.xml</DocumentationFile>
   </PropertyGroup>
-  
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netcoreapp2.0|AnyCPU'">
-    <DocumentationFile>bin\Debug\netcoreapp2.0\Wlniao.XCore.MongoDB.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netcoreapp2.0\Wlniao.WeAPP.xml</DocumentationFile>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp2.0|AnyCPU'">
-    <DocumentationFile>bin\Release\netcoreapp2.0\Wlniao.XCore.MongoDB.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netcoreapp2.0\Wlniao.WeAPP.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="2.0.6" />
+    <PackageReference Include="Wlniao.XCore" Version="2.0.7" />
   </ItemGroup>
 
 </Project>
