@@ -23,6 +23,7 @@ namespace Wlniao.WeAPP
                 { "getwxacode", GetWxaCodeEncode },
                 { "unifiedorder", UnifiedOrderEncode },
                 { "sendredpack", SendRedpackEncode },
+                { "transfers", TransfersEncode },
                 { "queryorder", QueryOrderEncode },
                 { "queryredpack", QueryRedpackEncode },
                 { "jscode2session", JsCode2SessionEncode },
@@ -31,6 +32,7 @@ namespace Wlniao.WeAPP
                 { "getwxacode", GetWxaCodeDecode },
                 { "unifiedorder", UnifiedOrderDecode },
                 { "sendredpack", SendRedpackDecode },
+                { "transfers", TransfersDecode },
                 { "queryorder", QueryOrderDecode },
                 { "queryredpack", QueryRedpackDecode },
                 { "jscode2session", JsCode2SessionDecode },
@@ -346,7 +348,6 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
-
         #region SendRedpack
         private void SendRedpackEncode(Context ctx)
         {
@@ -531,6 +532,166 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
+        #region Transfers
+        private void TransfersEncode(Context ctx)
+        {
+            var req = (Request.TransfersRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.mch_appid))
+                {
+                    req.mch_appid = Client.CfgWxAppId;
+                    if (string.IsNullOrEmpty(req.mch_appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                }
+                if (string.IsNullOrEmpty(req.mchid))
+                {
+                    req.mchid = Client.CfgWxPayId;
+                    if (string.IsNullOrEmpty(req.mchid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mchid" };
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("mch_appid", req.mch_appid));
+                kvList.Add(new KeyValuePair<String, String>("mchid", req.mchid));
+                kvList.Add(new KeyValuePair<String, String>("partner_trade_no", req.partner_trade_no));
+                kvList.Add(new KeyValuePair<String, String>("amount", req.amount.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("desc", req.desc));
+                kvList.Add(new KeyValuePair<String, String>("openid", req.openid));
+                kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                if (req.check_name)
+                {
+                    kvList.Add(new KeyValuePair<String, String>("check_name", "FORCE_CHECK"));
+                    kvList.Add(new KeyValuePair<String, String>("re_user_name", req.re_user_name));
+                }
+                else
+                {
+                    kvList.Add(new KeyValuePair<String, String>("check_name", "NO_CHECK"));
+                }
+
+                var cerPath = Wlniao.IO.PathTool.Map(req.mchid + ".p12");
+                if (file.Exists(cerPath))
+                {
+                    ctx.Certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(cerPath, req.mchid);
+
+                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    var values = new System.Text.StringBuilder();
+                    foreach (var kv in kvList)
+                    {
+                        if (!string.IsNullOrEmpty(kv.Value))
+                        {
+                            if (values.Length > 0)
+                            {
+                                values.Append("&");
+                            }
+                            values.Append(kv.Key + "=" + kv.Value);
+                        }
+                    }
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+
+                    #region 生成POST数据
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append("<xml>");
+                    foreach (var kv in kvList)
+                    {
+                        if (string.IsNullOrEmpty(kv.Value))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                        }
+                    }
+                    sb.Append("</xml>");
+                    #endregion
+
+                    ctx.Method = System.Net.Http.HttpMethod.Post;
+                    ctx.HttpRequestString = sb.ToString();
+                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                    ctx.RequestPath = "mmpaymkttransfers/promotion/transfers";
+
+                }
+                else
+                {
+                    log.Error("not found " + cerPath);
+                    ctx.Retry = 999;
+                    ctx.Response = new Error() { errmsg = "cert file not found" };
+                    return;
+                }
+                #endregion
+            }
+        }
+        private void TransfersDecode(Context ctx)
+        {
+            try
+            {
+                var res = new Response.TransfersResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.mchid = doc.GetElementsByTagName("mchid")[0].InnerText.Trim();
+                        res.mch_appid = doc.GetElementsByTagName("mch_appid")[0].InnerText.Trim();
+                        try { res.partner_trade_no = doc.GetElementsByTagName("partner_trade_no")[0].InnerText.Trim(); } catch { }
+                        try { res.payment_no = doc.GetElementsByTagName("payment_no")[0].InnerText.Trim(); } catch { }
+                        try { res.payment_time = doc.GetElementsByTagName("payment_time")[0].InnerText.Trim(); } catch { }
+                        try
+                        {
+                            var t = new DateTime(int.Parse(res.payment_time.Substring(0, 4)), int.Parse(res.payment_time.Substring(5, 2)), int.Parse(res.payment_time.Substring(8, 2)), int.Parse(res.payment_time.Substring(11, 2)), int.Parse(res.payment_time.Substring(14, 2)), int.Parse(res.payment_time.Substring(17, 2)), DateTimeKind.Utc).AddHours(-8);
+                            res.PaymentTime = DateTools.GetUnix(t);
+                        }
+                        catch { }
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
+                        }
+                        catch
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                        }
+                    }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
         #region QueryOrder
         private void QueryOrderEncode(Context ctx)
         {
@@ -668,7 +829,6 @@ namespace Wlniao.WeAPP
         {
             try
             {
-                var req = (Request.QueryOrderRequest)ctx.Request;
                 var res = new Response.QueryOrderResponse();
                 var doc = new System.Xml.XmlDocument();
                 doc.LoadXml(ctx.HttpResponseString);
@@ -704,9 +864,9 @@ namespace Wlniao.WeAPP
                             try
                             {
                                 var t = new DateTime(int.Parse(res.time_end.Substring(0, 4)), int.Parse(res.time_end.Substring(4, 2)), int.Parse(res.time_end.Substring(6, 2)), int.Parse(res.time_end.Substring(8, 2)), int.Parse(res.time_end.Substring(10, 2)), int.Parse(res.time_end.Substring(12, 2)), DateTimeKind.Utc).AddHours(-8);
-                                res.paytime = DateTools.GetUnix(t);
+                                res.PayTime = DateTools.GetUnix(t);
                             }
-                            catch { res.paytime = DateTools.GetUnix(); }
+                            catch { res.PayTime = DateTools.GetUnix(); }
                         }
                         ctx.Response = res;
                     }

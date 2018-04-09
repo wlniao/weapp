@@ -231,6 +231,29 @@ namespace Wlniao.WeAPP
         /// <summary>
         /// 小程序支付统一下单
         /// </summary>
+        /// <param name="trade_no"></param>
+        /// <param name="total_fee"></param>
+        /// <param name="body"></param>
+        /// <param name="spbill_create_ip"></param>
+        /// <param name="notify_url"></param>
+        /// <param name="trade_type"></param>
+        /// <param name="openid"></param>
+        /// <returns></returns>
+        public ApiResult<UnifiedOrderResponse> UnifiedOrder(String trade_no, Int32 total_fee, String body, String spbill_create_ip, String notify_url, String trade_type, String openid)
+        {
+            var request = new UnifiedOrderRequest();
+            request.out_trade_no = trade_no;
+            request.body = body;
+            request.total_fee = total_fee;
+            request.spbill_create_ip = spbill_create_ip;
+            request.notify_url = notify_url;
+            request.trade_type = trade_type;
+            request.openid = openid;
+            return UnifiedOrder(request);
+        }
+        /// <summary>
+        /// 小程序支付统一下单
+        /// </summary>
         public ApiResult<UnifiedOrderResponse> UnifiedOrder(UnifiedOrderRequest request)
         {
             if (request == null)
@@ -264,30 +287,6 @@ namespace Wlniao.WeAPP
             return GetResponseFromAsyncTask(UnifiedOrderAsync(request));
         }
         /// <summary>
-        /// 小程序支付统一下单
-        /// </summary>
-        /// <param name="trade_no"></param>
-        /// <param name="total_fee"></param>
-        /// <param name="body"></param>
-        /// <param name="spbill_create_ip"></param>
-        /// <param name="notify_url"></param>
-        /// <param name="trade_type"></param>
-        /// <param name="openid"></param>
-        /// <returns></returns>
-        public ApiResult<UnifiedOrderResponse> UnifiedOrder(String trade_no, Int32 total_fee, String body, String spbill_create_ip, String notify_url, String trade_type, String openid)
-        {
-            var request = new UnifiedOrderRequest();
-            request.out_trade_no = trade_no;
-            request.body = body;
-            request.total_fee = total_fee;
-            request.spbill_create_ip = spbill_create_ip;
-            request.notify_url = notify_url;
-            request.trade_type = trade_type;
-            request.openid = openid;
-            return GetResponseFromAsyncTask(UnifiedOrderAsync(request));
-        }
-
-        /// <summary>
         /// 小程序支付统一下单 的异步形式。
         /// </summary>
         /// <param name="request"></param>
@@ -299,6 +298,30 @@ namespace Wlniao.WeAPP
         #endregion 
 
         #region SendRedpack 发送现金红包
+        /// <summary>
+        /// 发送现金红包
+        /// </summary>
+        /// <param name="billno"></param>
+        /// <param name="amount"></param>
+        /// <param name="openid"></param>
+        /// <param name="act_name"></param>
+        /// <param name="send_name"></param>
+        /// <param name="wishing"></param>
+        /// <param name="remark"></param>
+        /// <returns></returns>
+        public ApiResult<SendRedpackResponse> SendRedpack(String billno, Int32 amount, String openid
+            , String act_name, String send_name, String wishing, String remark)
+        {
+            var request = new SendRedpackRequest();
+            request.mch_billno = billno;
+            request.total_amount = amount;
+            request.re_openid = openid;
+            request.act_name = act_name;
+            request.send_name = send_name;
+            request.wishing = wishing;
+            request.remark = remark;
+            return SendRedpack(request);
+        }
         /// <summary>
         /// 发送现金红包
         /// </summary>
@@ -343,38 +366,84 @@ namespace Wlniao.WeAPP
             return GetResponseFromAsyncTask(SendRedpackAsync(request));
         }
         /// <summary>
-        /// 发送现金红包
-        /// </summary>
-        /// <param name="billno"></param>
-        /// <param name="amount"></param>
-        /// <param name="openid"></param>
-        /// <param name="act_name"></param>
-        /// <param name="send_name"></param>
-        /// <param name="wishing"></param>
-        /// <param name="remark"></param>
-        /// <returns></returns>
-        public ApiResult<SendRedpackResponse> SendRedpack(String billno, Int32 amount, String openid
-            , String act_name, String send_name, String wishing, String remark)
-        {
-            var request = new SendRedpackRequest();
-            request.mch_billno = billno;
-            request.total_amount = amount;
-            request.re_openid = openid;
-            request.act_name = act_name;
-            request.send_name = send_name;
-            request.wishing = wishing;
-            request.remark = remark;
-            return GetResponseFromAsyncTask(SendRedpackAsync(request));
-        }
-
-        /// <summary>
-        /// 小程序支付统一下单 的异步形式。
+        /// 发送现金红包 的异步形式。
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
         public Task<ApiResult<SendRedpackResponse>> SendRedpackAsync(SendRedpackRequest request)
         {
             return CallAsync<SendRedpackRequest, SendRedpackResponse>("sendredpack", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion
+
+        #region Transfers 企业付款到零钱
+        /// <summary>
+        /// 企业付款到零钱
+        /// </summary>
+        /// <param name="trade_no"></param>
+        /// <param name="amount"></param>
+        /// <param name="openid"></param>
+        /// <param name="desc"></param>
+        /// <param name="check_name"></param>
+        /// <returns></returns>
+        public ApiResult<TransfersResponse> Transfers(String trade_no, Int32 amount, String openid
+            , String desc, String check_name = null)
+        {
+            var request = new TransfersRequest();
+            request.spbill_create_ip = Wlniao.OpenApi.Tool.GetIP();
+            request.partner_trade_no = trade_no;
+            request.amount = amount;
+            request.openid = openid;
+            request.desc = desc;
+            if (!string.IsNullOrEmpty(check_name))
+            {
+                request.check_name = true;
+                request.re_user_name = check_name;
+            }
+            return Transfers(request);
+        }
+
+        /// <summary>
+        /// 企业付款到零钱
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ApiResult<TransfersResponse> Transfers(TransfersRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<TransfersResponse>() { message = "require parameters" };
+            }
+            else if (request.amount <= 0)
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing amount" };
+            }
+            else if (string.IsNullOrEmpty(request.desc))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing desc" };
+            }
+            else if (string.IsNullOrEmpty(request.openid))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing openid" };
+            }
+            else if (string.IsNullOrEmpty(request.partner_trade_no))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing partner_trade_no" };
+            }
+            else if (string.IsNullOrEmpty(request.spbill_create_ip))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing spbill_create_ip" };
+            }
+            return GetResponseFromAsyncTask(TransfersAsync(request));
+        }
+        /// <summary>
+        /// 企业付款到零钱 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<TransfersResponse>> TransfersAsync(TransfersRequest request)
+        {
+            return CallAsync<TransfersRequest, TransfersResponse>("transfers", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
 

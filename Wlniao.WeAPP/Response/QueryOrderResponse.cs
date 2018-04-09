@@ -129,6 +129,6 @@ namespace Wlniao.WeAPP.Response
         /// <summary>
         /// 支付时间UNIXTIME
         /// </summary>
-        public long paytime { get; set; }
+        public long PayTime { get; set; }
     }
 }
