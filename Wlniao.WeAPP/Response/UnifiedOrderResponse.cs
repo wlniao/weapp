@@ -103,6 +103,8 @@ namespace Wlniao.WeAPP.Response
             {
                 return new
                 {
+                    appId = appid
+                    ,
                     timeStamp = timeStamp
                     ,
                     nonceStr = nonce_str
