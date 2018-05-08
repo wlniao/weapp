@@ -13,12 +13,12 @@ namespace Wlniao.WeAPP
     {
         #region 微信小程序特定配置信息
         internal const string WLN_WX_SVR_PAYID = "1293401101";
-        internal static string _WxAppId = null;
-        internal static string _WxAppSecret = null;
-        internal static string _WxPayId = null;
-        internal static string _WxPaySecret = null;
-        internal static string _WxSvrId = null;
-        internal static string _WxSvrPayId = null;
+        internal static string _WxAppId = null;     //小程序/公众号Id
+        internal static string _WxAppSecret = null; //小程序/公众号密钥
+        internal static string _WxPayId = null;     //收款方商户号
+        internal static string _WxPaySecret = null; //收款方支付密钥
+        internal static string _WxSvrId = null;     //服务商公众号
+        internal static string _WxSvrPayId = null;  //服务商商户号
         /// <summary>
         /// 小程序/公众号Id
         /// </summary>
@@ -170,18 +170,21 @@ namespace Wlniao.WeAPP
             }
             else
             {
-                return new Task<ApiResult<TResponse>>(a =>
+                if (ctx.Response is Error)
                 {
-                    if (ctx.Response is Error)
+                    var err = (Error)ctx.Response;
+                    return Task<ApiResult<TResponse>>.Run(() =>
                     {
-                        var err = (Error)ctx.Response;
                         return new ApiResult<TResponse>() { success = false, message = err.errmsg, code = err.errcode };
-                    }
-                    else
+                    });
+                }
+                else
+                {
+                    return Task<ApiResult<TResponse>>.Run(() =>
                     {
-                        return new ApiResult<TResponse>() { success = true, message = "success", data = (TResponse)ctx.Response };
-                    }
-                }, null);
+                        return new ApiResult<TResponse>() { success = true, message = "error", data = (TResponse)ctx.Response };
+                    });
+                }
             }
         }
         private TResponse GetResponseFromAsyncTask<TResponse>(Task<TResponse> task)

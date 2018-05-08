@@ -557,6 +557,7 @@ namespace Wlniao.WeAPP
                     if (string.IsNullOrEmpty(req.mchid))
                     {
                         ctx.Response = new Error() { errmsg = "missing mchid" };
+                        return;
                     }
                 }
                 #region 生成签名
@@ -712,6 +713,7 @@ namespace Wlniao.WeAPP
                     if (string.IsNullOrEmpty(req.appid))
                     {
                         ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
                     }
                 }
                 if (string.IsNullOrEmpty(req.secret))
@@ -720,6 +722,7 @@ namespace Wlniao.WeAPP
                     if (string.IsNullOrEmpty(req.secret))
                     {
                         ctx.Response = new Error() { errmsg = "missing secret" };
+                        return;
                     }
                 }
                 if (string.IsNullOrEmpty(req.mch_id))
@@ -736,6 +739,7 @@ namespace Wlniao.WeAPP
                     if (string.IsNullOrEmpty(req.mch_id))
                     {
                         ctx.Response = new Error() { errmsg = "missing mch_id" };
+                        return;
                     }
                 }
                 #region 生成签名
@@ -950,7 +954,7 @@ namespace Wlniao.WeAPP
                 {
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
-                    ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
+                    ctx.HttpRequestString = JsonConvert.SerializeObject(kvList);
                     ctx.RequestHost = "https://openapi.wlniao.com";
                     ctx.RequestPath = "cashier/queryredpack";
                 }

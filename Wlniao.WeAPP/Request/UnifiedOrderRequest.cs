@@ -61,9 +61,8 @@ namespace Wlniao.WeAPP.Request
         /// <remarks>商品简单描述，该字段请按照规范传递</remarks>
         public string body { get; set; }
         /// <summary>
-        /// 商户订单号
+        /// 商户系统内部订单号，要求32个字符内，只能是数字、大小写字母_-|*@ ，且在同一个商户号下唯一。
         /// </summary>
-        /// <remarks>商户系统内部订单号，要求32个字符内，只能是数字、大小写字母_-|*@ ，且在同一个商户号下唯一。</remarks>
         public string out_trade_no { get; set; }
         /// <summary>
         /// 标价币种
@@ -91,14 +90,12 @@ namespace Wlniao.WeAPP.Request
         /// <remarks>订单失效时间，格式为yyyyMMddHHmmss，如2009年12月27日9点10分10秒表示为20091227091010。订单失效时间是针对订单号而言的，由于在请求支付的时候有一个必传参数prepay_id只有两小时的有效期，所以在重入时间超过2小时的时候需要重新请求下单接口获取新的prepay_id</remarks>
         public string time_expire { get; set; }
         /// <summary>
-        /// 通知地址
+        /// 通知地址 异步接收微信支付结果通知的回调地址，通知url必须为外网可访问的url，不能携带参数。
         /// </summary>
-        /// <remarks>异步接收微信支付结果通知的回调地址，通知url必须为外网可访问的url，不能携带参数。</remarks>
         public string notify_url { get; set; }
         /// <summary>
-        /// 交易类型
+        /// 交易类型 调用接口提交的交易类型，取值如下：JSAPI（默认），NATIVE，APP，MICROPAY
         /// </summary>
-        /// <remarks>调用接口提交的交易类型，取值如下：JSAPI，NATIVE，APP，MICROPAY</remarks>
         public string trade_type
         {
             get
@@ -112,9 +109,8 @@ namespace Wlniao.WeAPP.Request
             set { _trade_type = value; }
         }
         /// <summary>
-        /// 商品ID
+        /// 商品ID trade_type=NATIVE时（即扫码支付），此参数必传。此参数为二维码中包含的商品ID，商户自行定义
         /// </summary>
-        /// <remarks>trade_type=NATIVE时（即扫码支付），此参数必传。此参数为二维码中包含的商品ID，商户自行定义</remarks>
         public string product_id { get; set; }
         /// <summary>
         /// 指定支付方式
