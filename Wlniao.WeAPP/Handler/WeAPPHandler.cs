@@ -22,18 +22,20 @@ namespace Wlniao.WeAPP
             EncoderMap = new Dictionary<string, ResponseEncoder>() {
                 { "getwxacode", GetWxaCodeEncode },
                 { "unifiedorder", UnifiedOrderEncode },
-                { "sendredpack", SendRedpackEncode },
-                { "transfers", TransfersEncode },
                 { "queryorder", QueryOrderEncode },
+                { "refund", RefundEncode },
+                { "transfers", TransfersEncode },
+                { "sendredpack", SendRedpackEncode },
                 { "queryredpack", QueryRedpackEncode },
                 { "jscode2session", JsCode2SessionEncode },
             };
             DecoderMap = new Dictionary<string, ResponseDecoder>() {
                 { "getwxacode", GetWxaCodeDecode },
                 { "unifiedorder", UnifiedOrderDecode },
-                { "sendredpack", SendRedpackDecode },
-                { "transfers", TransfersDecode },
                 { "queryorder", QueryOrderDecode },
+                { "refund", RefundDecode },
+                { "transfers", TransfersDecode },
+                { "sendredpack", SendRedpackDecode },
                 { "queryredpack", QueryRedpackDecode },
                 { "jscode2session", JsCode2SessionDecode },
             };
@@ -348,351 +350,6 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
-        #region SendRedpack
-        private void SendRedpackEncode(Context ctx)
-        {
-            var req = (Request.SendRedpackRequest)ctx.Request;
-            if (req != null)
-            {
-                if (string.IsNullOrEmpty(req.wxappid))
-                {
-                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
-                    {
-                        req.wxappid = Client.CfgWxAppId;
-                    }
-                    else
-                    {
-                        req.wxappid = Client.CfgWxSvrId;
-                        req.msgappid = Client.CfgWxAppId;
-                    }
-                    if (string.IsNullOrEmpty(req.wxappid))
-                    {
-                        ctx.Response = new Error() { errmsg = "missing appid" };
-                        return;
-                    }
-                }
-                if (string.IsNullOrEmpty(req.secret))
-                {
-                    req.secret = Client.CfgWxPaySecret;
-                }
-                if (string.IsNullOrEmpty(req.mch_id))
-                {
-                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
-                    {
-                        req.mch_id = Client.CfgWxPayId;
-                    }
-                    else
-                    {
-                        req.mch_id = Client.CfgWxSvrPayId;
-                        req.sub_mch_id = Client.CfgWxPayId;
-                        req.consume_mch_id = Client.CfgWxPayId;
-                    }
-                    if (string.IsNullOrEmpty(req.mch_id))
-                    {
-                        ctx.Response = new Error() { errmsg = "missing mch_id" };
-                    }
-                }
-                #region 生成签名
-                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
-                var kvList = new List<KeyValuePair<String, String>>();
-                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
-                kvList.Add(new KeyValuePair<String, String>("wxappid", req.wxappid));
-                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
-                if (!string.IsNullOrEmpty(req.msgappid))
-                {
-                    kvList.Add(new KeyValuePair<String, String>("msgappid", req.msgappid));
-                }
-                if (!string.IsNullOrEmpty(req.sub_mch_id))
-                {
-                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
-                    kvList.Add(new KeyValuePair<String, String>("consume_mch_id", req.consume_mch_id));
-                }
-                kvList.Add(new KeyValuePair<String, String>("act_name", req.act_name));
-                kvList.Add(new KeyValuePair<String, String>("send_name", req.send_name));
-                kvList.Add(new KeyValuePair<String, String>("wishing", req.wishing));
-                kvList.Add(new KeyValuePair<String, String>("remark", req.remark));
-                if (!string.IsNullOrEmpty(req.scene_id))
-                {
-                    kvList.Add(new KeyValuePair<String, String>("scene_id", req.scene_id));
-                }
-                kvList.Add(new KeyValuePair<String, String>("mch_billno", req.mch_billno));
-                kvList.Add(new KeyValuePair<String, String>("total_num", req.total_num.ToString()));
-                kvList.Add(new KeyValuePair<String, String>("total_amount", req.total_amount.ToString()));
-                kvList.Add(new KeyValuePair<String, String>("re_openid", req.re_openid));
-                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
-                {
-                    //未来鸟子商户专用
-                    ctx.Method = System.Net.Http.HttpMethod.Post;
-                    ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
-                    ctx.RequestHost = "https://openapi.wlniao.com";
-                    ctx.RequestPath = "cashier/sendredpack";
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(req.client_ip))
-                    {
-                        kvList.Add(new KeyValuePair<String, String>("client_ip", Wlniao.OpenApi.Tool.GetIP()));
-                    }
-                    else
-                    {
-                        kvList.Add(new KeyValuePair<String, String>("client_ip", req.msgappid));
-                    }
-                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
-                    var values = new System.Text.StringBuilder();
-                    foreach (var kv in kvList)
-                    {
-                        if (!string.IsNullOrEmpty(kv.Value))
-                        {
-                            if (values.Length > 0)
-                            {
-                                values.Append("&");
-                            }
-                            values.Append(kv.Key + "=" + kv.Value);
-                        }
-                    }
-                    values.Append("&key=" + req.secret);
-                    //生成sig
-                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
-                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
-                    foreach (byte b in md5_result)
-                    {
-                        sig_builder.Append(b.ToString("x2"));
-                    }
-                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
-
-                    #region 生成POST数据
-                    var sb = new System.Text.StringBuilder();
-                    sb.Append("<xml>");
-                    foreach (var kv in kvList)
-                    {
-                        if (string.IsNullOrEmpty(kv.Value))
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
-                        }
-                    }
-                    sb.Append("</xml>");
-                    #endregion
-
-                    ctx.Method = System.Net.Http.HttpMethod.Post;
-                    ctx.HttpRequestString = sb.ToString();
-                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
-                    ctx.RequestPath = "mmpaymkttransfers/sendredpack";
-                }
-                #endregion
-            }
-        }
-        private void SendRedpackDecode(Context ctx)
-        {
-            try
-            {
-                var req = (Request.SendRedpackRequest)ctx.Request;
-                var res = new Response.SendRedpackResponse();
-                var doc = new System.Xml.XmlDocument();
-                doc.LoadXml(ctx.HttpResponseString);
-                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
-                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
-                if (res.return_code == "SUCCESS")
-                {
-                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
-                    if (res.result_code == "SUCCESS")
-                    {
-                        res.mch_billno = doc.GetElementsByTagName("mch_billno")[0].InnerText.Trim();
-                        res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
-                        res.wxappid = doc.GetElementsByTagName("wxappid")[0].InnerText.Trim();
-                        res.re_openid = doc.GetElementsByTagName("re_openid")[0].InnerText.Trim();
-                        res.send_listid = doc.GetElementsByTagName("send_listid")[0].InnerText.Trim();
-                        res.total_amount = cvt.ToInt(doc.GetElementsByTagName("total_amount")[0].InnerText.Trim());
-                        ctx.Response = res;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
-                        }
-                        catch
-                        {
-                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
-                        }
-                    }
-                }
-                else
-                {
-                    ctx.Response = new Error() { errmsg = res.return_msg };
-                }
-            }
-            catch
-            {
-                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
-            }
-        }
-        #endregion
-
-        #region Transfers
-        private void TransfersEncode(Context ctx)
-        {
-            var req = (Request.TransfersRequest)ctx.Request;
-            if (req != null)
-            {
-                if (string.IsNullOrEmpty(req.mch_appid))
-                {
-                    req.mch_appid = Client.CfgWxAppId;
-                    if (string.IsNullOrEmpty(req.mch_appid))
-                    {
-                        ctx.Response = new Error() { errmsg = "missing mch_appid" };
-                        return;
-                    }
-                }
-                if (string.IsNullOrEmpty(req.secret))
-                {
-                    req.secret = Client.CfgWxPaySecret;
-                }
-                if (string.IsNullOrEmpty(req.mchid))
-                {
-                    req.mchid = Client.CfgWxPayId;
-                    if (string.IsNullOrEmpty(req.mchid))
-                    {
-                        ctx.Response = new Error() { errmsg = "missing mchid" };
-                        return;
-                    }
-                }
-                #region 生成签名
-                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
-                var kvList = new List<KeyValuePair<String, String>>();
-                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
-                kvList.Add(new KeyValuePair<String, String>("mch_appid", req.mch_appid));
-                kvList.Add(new KeyValuePair<String, String>("mchid", req.mchid));
-                kvList.Add(new KeyValuePair<String, String>("partner_trade_no", req.partner_trade_no));
-                kvList.Add(new KeyValuePair<String, String>("amount", req.amount.ToString()));
-                kvList.Add(new KeyValuePair<String, String>("desc", req.desc));
-                kvList.Add(new KeyValuePair<String, String>("openid", req.openid));
-                kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
-                if (req.check_name)
-                {
-                    kvList.Add(new KeyValuePair<String, String>("check_name", "FORCE_CHECK"));
-                    kvList.Add(new KeyValuePair<String, String>("re_user_name", req.re_user_name));
-                }
-                else
-                {
-                    kvList.Add(new KeyValuePair<String, String>("check_name", "NO_CHECK"));
-                }
-
-                var cerPath = Wlniao.IO.PathTool.Map(req.mchid + ".p12");
-                if (file.Exists(cerPath))
-                {
-                    ctx.Certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(cerPath, req.mchid);
-
-                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
-                    var values = new System.Text.StringBuilder();
-                    foreach (var kv in kvList)
-                    {
-                        if (!string.IsNullOrEmpty(kv.Value))
-                        {
-                            if (values.Length > 0)
-                            {
-                                values.Append("&");
-                            }
-                            values.Append(kv.Key + "=" + kv.Value);
-                        }
-                    }
-                    values.Append("&key=" + req.secret);
-                    //生成sig
-                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
-                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
-                    foreach (byte b in md5_result)
-                    {
-                        sig_builder.Append(b.ToString("x2"));
-                    }
-                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
-
-                    #region 生成POST数据
-                    var sb = new System.Text.StringBuilder();
-                    sb.Append("<xml>");
-                    foreach (var kv in kvList)
-                    {
-                        if (string.IsNullOrEmpty(kv.Value))
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
-                        }
-                    }
-                    sb.Append("</xml>");
-                    #endregion
-
-                    ctx.Method = System.Net.Http.HttpMethod.Post;
-                    ctx.HttpRequestString = sb.ToString();
-                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
-                    ctx.RequestPath = "mmpaymkttransfers/promotion/transfers";
-
-                }
-                else
-                {
-                    log.Error("not found " + cerPath);
-                    ctx.Retry = 999;
-                    ctx.Response = new Error() { errmsg = "cert file not found" };
-                    return;
-                }
-                #endregion
-            }
-        }
-        private void TransfersDecode(Context ctx)
-        {
-            try
-            {
-                var res = new Response.TransfersResponse();
-                var doc = new System.Xml.XmlDocument();
-                doc.LoadXml(ctx.HttpResponseString);
-                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
-                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
-                if (res.return_code == "SUCCESS")
-                {
-                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
-                    if (res.result_code == "SUCCESS")
-                    {
-                        res.mchid = doc.GetElementsByTagName("mchid")[0].InnerText.Trim();
-                        res.mch_appid = doc.GetElementsByTagName("mch_appid")[0].InnerText.Trim();
-                        try { res.partner_trade_no = doc.GetElementsByTagName("partner_trade_no")[0].InnerText.Trim(); } catch { }
-                        try { res.payment_no = doc.GetElementsByTagName("payment_no")[0].InnerText.Trim(); } catch { }
-                        try { res.payment_time = doc.GetElementsByTagName("payment_time")[0].InnerText.Trim(); } catch { }
-                        try
-                        {
-                            var t = new DateTime(int.Parse(res.payment_time.Substring(0, 4)), int.Parse(res.payment_time.Substring(5, 2)), int.Parse(res.payment_time.Substring(8, 2)), int.Parse(res.payment_time.Substring(11, 2)), int.Parse(res.payment_time.Substring(14, 2)), int.Parse(res.payment_time.Substring(17, 2)), DateTimeKind.Utc).AddHours(-8);
-                            res.PaymentTime = DateTools.GetUnix(t);
-                        }
-                        catch { }
-                        ctx.Response = res;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
-                        }
-                        catch
-                        {
-                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
-                        }
-                    }
-                }
-                else
-                {
-                    ctx.Response = new Error() { errmsg = res.return_msg };
-                }
-            }
-            catch
-            {
-                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
-            }
-        }
-        #endregion
-
         #region QueryOrder
         private void QueryOrderEncode(Context ctx)
         {
@@ -872,6 +529,563 @@ namespace Wlniao.WeAPP
                             }
                             catch { res.PayTime = DateTools.GetUnix(); }
                         }
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
+                        }
+                        catch
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                        }
+                    }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
+        #region Refund
+        private void RefundEncode(Context ctx)
+        {
+            var req = (Request.RefundRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.appid))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.appid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.appid = Client.CfgWxSvrId;
+                        req.sub_appid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                    if (string.IsNullOrEmpty(req.secret))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing secret" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.mch_id))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                    }
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_id" };
+                        return;
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
+                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.sub_appid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_appid", req.sub_appid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                }
+                if (!string.IsNullOrEmpty(req.transaction_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("transaction_id", req.transaction_id));
+                }
+                if (!string.IsNullOrEmpty(req.out_trade_no))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_trade_no", req.out_trade_no));
+                }
+                if (string.IsNullOrEmpty(req.out_refund_no))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_refund_no", req.transaction_id));
+                }
+                else
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_refund_no", req.out_refund_no));
+                }
+                if (!string.IsNullOrEmpty(req.refund_desc))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("refund_desc", req.refund_desc));
+                }
+                if (!string.IsNullOrEmpty(req.notify_url))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("notify_url", req.notify_url));
+                }
+                kvList.Add(new KeyValuePair<String, String>("total_fee", req.total_fee.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("refund_fee", req.refund_fee.ToString()));
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
+                {
+                    //未来鸟子商户专用
+                    ctx.Method = System.Net.Http.HttpMethod.Post;
+                    ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
+                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestPath = "cashier/refund";
+                }
+                else
+                {
+                    var cerPath = Wlniao.IO.PathTool.Map(req.mch_id + ".p12");
+                    if (file.Exists(cerPath))
+                    {
+                        ctx.Certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(cerPath, req.mch_id);
+
+                        kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                        var values = new System.Text.StringBuilder();
+                        foreach (var kv in kvList)
+                        {
+                            if (!string.IsNullOrEmpty(kv.Value))
+                            {
+                                if (values.Length > 0)
+                                {
+                                    values.Append("&");
+                                }
+                                values.Append(kv.Key + "=" + kv.Value);
+                            }
+                        }
+                        values.Append("&key=" + req.secret);
+                        //生成sig
+                        byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                        System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                        foreach (byte b in md5_result)
+                        {
+                            sig_builder.Append(b.ToString("x2"));
+                        }
+                        kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+
+
+                        #region 生成POST数据
+                        var sb = new System.Text.StringBuilder();
+                        sb.Append("<xml>");
+                        foreach (var kv in kvList)
+                        {
+                            if (string.IsNullOrEmpty(kv.Value))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                            }
+                        }
+                        sb.Append("</xml>");
+                        #endregion
+
+                        ctx.Method = System.Net.Http.HttpMethod.Post;
+                        ctx.HttpRequestString = sb.ToString();
+                        ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                        ctx.RequestPath = "secapi/pay/refund";
+
+                    }
+                    else
+                    {
+                        log.Error("not found " + cerPath);
+                        ctx.Retry = 999;
+                        ctx.Response = new Error() { errmsg = "cert file not found" };
+                        return;
+                    }
+                }
+                #endregion
+            }
+        }
+        private void RefundDecode(Context ctx)
+        {
+            try
+            {
+                var res = new Response.RefundResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
+                    res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                    res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
+                    res.sign = doc.GetElementsByTagName("sign")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.total_fee = cvt.ToInt(doc.GetElementsByTagName("total_fee")[0].InnerText.Trim());
+                        res.refund_fee = cvt.ToInt(doc.GetElementsByTagName("refund_fee")[0].InnerText.Trim());
+                        res.refund_id = doc.GetElementsByTagName("refund_id")[0].InnerText.Trim();
+                        res.transaction_id = doc.GetElementsByTagName("transaction_id")[0].InnerText.Trim();
+                        res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
+                        res.out_refund_no = doc.GetElementsByTagName("out_refund_no")[0].InnerText.Trim();
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
+                        }
+                        catch
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                        }
+                    }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
+        #region Transfers
+        private void TransfersEncode(Context ctx)
+        {
+            var req = (Request.TransfersRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.mch_appid))
+                {
+                    req.mch_appid = Client.CfgWxAppId;
+                    if (string.IsNullOrEmpty(req.mch_appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                }
+                if (string.IsNullOrEmpty(req.mchid))
+                {
+                    req.mchid = Client.CfgWxPayId;
+                    if (string.IsNullOrEmpty(req.mchid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mchid" };
+                        return;
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("mch_appid", req.mch_appid));
+                kvList.Add(new KeyValuePair<String, String>("mchid", req.mchid));
+                kvList.Add(new KeyValuePair<String, String>("partner_trade_no", req.partner_trade_no));
+                kvList.Add(new KeyValuePair<String, String>("amount", req.amount.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("desc", req.desc));
+                kvList.Add(new KeyValuePair<String, String>("openid", req.openid));
+                kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                if (req.check_name)
+                {
+                    kvList.Add(new KeyValuePair<String, String>("check_name", "FORCE_CHECK"));
+                    kvList.Add(new KeyValuePair<String, String>("re_user_name", req.re_user_name));
+                }
+                else
+                {
+                    kvList.Add(new KeyValuePair<String, String>("check_name", "NO_CHECK"));
+                }
+                #endregion
+
+                var cerPath = Wlniao.IO.PathTool.Map(req.mchid + ".p12");
+                if (file.Exists(cerPath))
+                {
+                    ctx.Certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(cerPath, req.mchid);
+
+                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    var values = new System.Text.StringBuilder();
+                    foreach (var kv in kvList)
+                    {
+                        if (!string.IsNullOrEmpty(kv.Value))
+                        {
+                            if (values.Length > 0)
+                            {
+                                values.Append("&");
+                            }
+                            values.Append(kv.Key + "=" + kv.Value);
+                        }
+                    }
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+
+                    #region 生成POST数据
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append("<xml>");
+                    foreach (var kv in kvList)
+                    {
+                        if (string.IsNullOrEmpty(kv.Value))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                        }
+                    }
+                    sb.Append("</xml>");
+                    #endregion
+
+                    ctx.Method = System.Net.Http.HttpMethod.Post;
+                    ctx.HttpRequestString = sb.ToString();
+                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                    ctx.RequestPath = "mmpaymkttransfers/promotion/transfers";
+
+                }
+                else
+                {
+                    log.Error("not found " + cerPath);
+                    ctx.Retry = 999;
+                    ctx.Response = new Error() { errmsg = "cert file not found" };
+                    return;
+                }
+            }
+        }
+        private void TransfersDecode(Context ctx)
+        {
+            try
+            {
+                var res = new Response.TransfersResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.mchid = doc.GetElementsByTagName("mchid")[0].InnerText.Trim();
+                        res.mch_appid = doc.GetElementsByTagName("mch_appid")[0].InnerText.Trim();
+                        try { res.partner_trade_no = doc.GetElementsByTagName("partner_trade_no")[0].InnerText.Trim(); } catch { }
+                        try { res.payment_no = doc.GetElementsByTagName("payment_no")[0].InnerText.Trim(); } catch { }
+                        try { res.payment_time = doc.GetElementsByTagName("payment_time")[0].InnerText.Trim(); } catch { }
+                        try
+                        {
+                            var t = new DateTime(int.Parse(res.payment_time.Substring(0, 4)), int.Parse(res.payment_time.Substring(5, 2)), int.Parse(res.payment_time.Substring(8, 2)), int.Parse(res.payment_time.Substring(11, 2)), int.Parse(res.payment_time.Substring(14, 2)), int.Parse(res.payment_time.Substring(17, 2)), DateTimeKind.Utc).AddHours(-8);
+                            res.PaymentTime = DateTools.GetUnix(t);
+                        }
+                        catch { }
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim() };
+                        }
+                        catch
+                        {
+                            ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                        }
+                    }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
+        #region SendRedpack
+        private void SendRedpackEncode(Context ctx)
+        {
+            var req = (Request.SendRedpackRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.wxappid))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.wxappid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.wxappid = Client.CfgWxSvrId;
+                        req.msgappid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.wxappid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                }
+                if (string.IsNullOrEmpty(req.mch_id))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                        req.consume_mch_id = Client.CfgWxPayId;
+                    }
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_id" };
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("wxappid", req.wxappid));
+                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.msgappid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("msgappid", req.msgappid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                    kvList.Add(new KeyValuePair<String, String>("consume_mch_id", req.consume_mch_id));
+                }
+                kvList.Add(new KeyValuePair<String, String>("act_name", req.act_name));
+                kvList.Add(new KeyValuePair<String, String>("send_name", req.send_name));
+                kvList.Add(new KeyValuePair<String, String>("wishing", req.wishing));
+                kvList.Add(new KeyValuePair<String, String>("remark", req.remark));
+                if (!string.IsNullOrEmpty(req.scene_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("scene_id", req.scene_id));
+                }
+                kvList.Add(new KeyValuePair<String, String>("mch_billno", req.mch_billno));
+                kvList.Add(new KeyValuePair<String, String>("total_num", req.total_num.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("total_amount", req.total_amount.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("re_openid", req.re_openid));
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
+                {
+                    //未来鸟子商户专用
+                    ctx.Method = System.Net.Http.HttpMethod.Post;
+                    ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
+                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestPath = "cashier/sendredpack";
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(req.client_ip))
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("client_ip", Wlniao.OpenApi.Tool.GetIP()));
+                    }
+                    else
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("client_ip", req.msgappid));
+                    }
+                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    var values = new System.Text.StringBuilder();
+                    foreach (var kv in kvList)
+                    {
+                        if (!string.IsNullOrEmpty(kv.Value))
+                        {
+                            if (values.Length > 0)
+                            {
+                                values.Append("&");
+                            }
+                            values.Append(kv.Key + "=" + kv.Value);
+                        }
+                    }
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+
+                    #region 生成POST数据
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append("<xml>");
+                    foreach (var kv in kvList)
+                    {
+                        if (string.IsNullOrEmpty(kv.Value))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                        }
+                    }
+                    sb.Append("</xml>");
+                    #endregion
+
+                    ctx.Method = System.Net.Http.HttpMethod.Post;
+                    ctx.HttpRequestString = sb.ToString();
+                    ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                    ctx.RequestPath = "mmpaymkttransfers/sendredpack";
+                }
+                #endregion
+            }
+        }
+        private void SendRedpackDecode(Context ctx)
+        {
+            try
+            {
+                var req = (Request.SendRedpackRequest)ctx.Request;
+                var res = new Response.SendRedpackResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.mch_billno = doc.GetElementsByTagName("mch_billno")[0].InnerText.Trim();
+                        res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                        res.wxappid = doc.GetElementsByTagName("wxappid")[0].InnerText.Trim();
+                        res.re_openid = doc.GetElementsByTagName("re_openid")[0].InnerText.Trim();
+                        res.send_listid = doc.GetElementsByTagName("send_listid")[0].InnerText.Trim();
+                        res.total_amount = cvt.ToInt(doc.GetElementsByTagName("total_amount")[0].InnerText.Trim());
                         ctx.Response = res;
                     }
                     else

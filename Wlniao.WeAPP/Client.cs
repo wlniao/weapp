@@ -11,10 +11,12 @@ namespace Wlniao.WeAPP
     /// </summary>
     public class Client : Wlniao.Handler.IClient
     {
-        #region 微信小程序特定配置信息
+        #region 公众号/小程序配置信息
         internal const string WLN_WX_SVR_PAYID = "1293401101";
         internal static string _WxAppId = null;     //小程序/公众号Id
         internal static string _WxAppSecret = null; //小程序/公众号密钥
+        internal static string _WxAppToken = null;  //公众号接口调用令牌
+        internal static string _WxAppEncodingAESKey = null; //接口消息加密解密密钥
         internal static string _WxPayId = null;     //收款方商户号
         internal static string _WxPaySecret = null; //收款方支付密钥
         internal static string _WxSvrId = null;     //服务商公众号
@@ -45,6 +47,34 @@ namespace Wlniao.WeAPP
                     _WxAppSecret = Config.GetSetting("WxAppSecret");
                 }
                 return _WxAppSecret;
+            }
+        }
+        /// <summary>
+        /// 公众号接口调用令牌
+        /// </summary>
+        public static string CfgWxAppToken
+        {
+            get
+            {
+                if (_WxAppToken == null)
+                {
+                    _WxAppToken = Config.GetSetting("WxAppToken");
+                }
+                return _WxAppToken;
+            }
+        }
+        /// <summary>
+        /// 接口消息加密解密密钥
+        /// </summary>
+        public static string CfgWxAppEncodingAESKey
+        {
+            get
+            {
+                if (_WxAppEncodingAESKey == null)
+                {
+                    _WxAppEncodingAESKey = Config.GetSetting("WxAppEncodingAESKey");
+                }
+                return _WxAppEncodingAESKey;
             }
         }
         /// <summary>
@@ -230,7 +260,7 @@ namespace Wlniao.WeAPP
         }
         #endregion 
 
-        #region UnifiedOrder 小程序支付统一下单
+        #region UnifiedOrder 微信支付统一下单
         /// <summary>
         /// 小程序支付统一下单
         /// </summary>
@@ -297,6 +327,153 @@ namespace Wlniao.WeAPP
         public Task<ApiResult<UnifiedOrderResponse>> UnifiedOrderAsync(UnifiedOrderRequest request)
         {
             return CallAsync<UnifiedOrderRequest, UnifiedOrderResponse>("unifiedorder", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
+        #region QueryOrder 微信支付订单统一查询
+        /// <summary>
+        /// 微信支付订单查询
+        /// </summary>
+        public ApiResult<QueryOrderResponse> QueryOrder(QueryOrderRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<QueryOrderResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<QueryOrderResponse>() { message = "missing transaction_id or out_trade_no" };
+            }
+            return GetResponseFromAsyncTask(QueryOrderAsync(request));
+        }
+        /// <summary>
+        /// 微信支付订单查询
+        /// </summary>
+        /// <param name="out_trade_no"></param>
+        /// <returns></returns>
+        public ApiResult<QueryOrderResponse> QueryOrder(String out_trade_no)
+        {
+            var request = new QueryOrderRequest();
+            request.out_trade_no = out_trade_no;
+            return GetResponseFromAsyncTask(QueryOrderAsync(request));
+        }
+        /// <summary>
+        /// 微信支付订单查询 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<QueryOrderResponse>> QueryOrderAsync(QueryOrderRequest request)
+        {
+            return CallAsync<QueryOrderRequest, QueryOrderResponse>("queryorder", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion
+
+        #region Refund 按订单申请退款
+        /// <summary>
+        /// 按订单申请退款
+        /// </summary>
+        public ApiResult<RefundResponse> Refund(RefundRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<RefundResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<RefundResponse>() { message = "missing transaction_id or out_trade_no" };
+            }
+            return GetResponseFromAsyncTask(RefundAsync(request));
+        }
+        /// <summary>
+        /// 按订单申请退款
+        /// </summary>
+        /// <param name="out_trade_no"></param>
+        /// <returns></returns>
+        public ApiResult<RefundResponse> Refund(String out_trade_no)
+        {
+            var request = new RefundRequest();
+            request.out_trade_no = out_trade_no;
+            return GetResponseFromAsyncTask(RefundAsync(request));
+        }
+        /// <summary>
+        /// 按订单申请退款 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<RefundResponse>> RefundAsync(RefundRequest request)
+        {
+            return CallAsync<RefundRequest, RefundResponse>("refund", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion
+
+        #region Transfers 企业付款到零钱
+        /// <summary>
+        /// 企业付款到零钱
+        /// </summary>
+        /// <param name="trade_no"></param>
+        /// <param name="amount"></param>
+        /// <param name="openid"></param>
+        /// <param name="desc"></param>
+        /// <param name="check_name"></param>
+        /// <returns></returns>
+        public ApiResult<TransfersResponse> Transfers(String trade_no, Int32 amount, String openid
+            , String desc, String check_name = null)
+        {
+            var request = new TransfersRequest();
+            request.spbill_create_ip = Wlniao.OpenApi.Tool.GetIP();
+            request.partner_trade_no = trade_no;
+            request.amount = amount;
+            request.openid = openid;
+            request.desc = desc;
+            if (!string.IsNullOrEmpty(check_name))
+            {
+                request.check_name = true;
+                request.re_user_name = check_name;
+            }
+            return Transfers(request);
+        }
+
+        /// <summary>
+        /// 企业付款到零钱
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ApiResult<TransfersResponse> Transfers(TransfersRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<TransfersResponse>() { message = "require parameters" };
+            }
+            else if (request.amount <= 0)
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing amount" };
+            }
+            else if (string.IsNullOrEmpty(request.desc))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing desc" };
+            }
+            else if (string.IsNullOrEmpty(request.openid))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing openid" };
+            }
+            else if (string.IsNullOrEmpty(request.partner_trade_no))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing partner_trade_no" };
+            }
+            else if (string.IsNullOrEmpty(request.spbill_create_ip))
+            {
+                return new ApiResult<TransfersResponse>() { message = "missing spbill_create_ip" };
+            }
+            return GetResponseFromAsyncTask(TransfersAsync(request));
+        }
+        /// <summary>
+        /// 企业付款到零钱 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<TransfersResponse>> TransfersAsync(TransfersRequest request)
+        {
+            return CallAsync<TransfersRequest, TransfersResponse>("transfers", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
 
@@ -376,115 +553,6 @@ namespace Wlniao.WeAPP
         public Task<ApiResult<SendRedpackResponse>> SendRedpackAsync(SendRedpackRequest request)
         {
             return CallAsync<SendRedpackRequest, SendRedpackResponse>("sendredpack", request, System.Net.Http.HttpMethod.Get);
-        }
-        #endregion
-
-        #region Transfers 企业付款到零钱
-        /// <summary>
-        /// 企业付款到零钱
-        /// </summary>
-        /// <param name="trade_no"></param>
-        /// <param name="amount"></param>
-        /// <param name="openid"></param>
-        /// <param name="desc"></param>
-        /// <param name="check_name"></param>
-        /// <returns></returns>
-        public ApiResult<TransfersResponse> Transfers(String trade_no, Int32 amount, String openid
-            , String desc, String check_name = null)
-        {
-            var request = new TransfersRequest();
-            request.spbill_create_ip = Wlniao.OpenApi.Tool.GetIP();
-            request.partner_trade_no = trade_no;
-            request.amount = amount;
-            request.openid = openid;
-            request.desc = desc;
-            if (!string.IsNullOrEmpty(check_name))
-            {
-                request.check_name = true;
-                request.re_user_name = check_name;
-            }
-            return Transfers(request);
-        }
-
-        /// <summary>
-        /// 企业付款到零钱
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ApiResult<TransfersResponse> Transfers(TransfersRequest request)
-        {
-            if (request == null)
-            {
-                return new ApiResult<TransfersResponse>() { message = "require parameters" };
-            }
-            else if (request.amount <= 0)
-            {
-                return new ApiResult<TransfersResponse>() { message = "missing amount" };
-            }
-            else if (string.IsNullOrEmpty(request.desc))
-            {
-                return new ApiResult<TransfersResponse>() { message = "missing desc" };
-            }
-            else if (string.IsNullOrEmpty(request.openid))
-            {
-                return new ApiResult<TransfersResponse>() { message = "missing openid" };
-            }
-            else if (string.IsNullOrEmpty(request.partner_trade_no))
-            {
-                return new ApiResult<TransfersResponse>() { message = "missing partner_trade_no" };
-            }
-            else if (string.IsNullOrEmpty(request.spbill_create_ip))
-            {
-                return new ApiResult<TransfersResponse>() { message = "missing spbill_create_ip" };
-            }
-            return GetResponseFromAsyncTask(TransfersAsync(request));
-        }
-        /// <summary>
-        /// 企业付款到零钱 的异步形式。
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public Task<ApiResult<TransfersResponse>> TransfersAsync(TransfersRequest request)
-        {
-            return CallAsync<TransfersRequest, TransfersResponse>("transfers", request, System.Net.Http.HttpMethod.Get);
-        }
-        #endregion 
-
-        #region QueryOrder 微信支付订单统一查询
-        /// <summary>
-        /// 微信支付订单查询
-        /// </summary>
-        public ApiResult<QueryOrderResponse> QueryOrder(QueryOrderRequest request)
-        {
-            if (request == null)
-            {
-                return new ApiResult<QueryOrderResponse>() { message = "require parameters" };
-            }
-            else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
-            {
-                return new ApiResult<QueryOrderResponse>() { message = "missing transaction_id or out_trade_no" };
-            }
-            return GetResponseFromAsyncTask(QueryOrderAsync(request));
-        }
-        /// <summary>
-        /// 微信支付订单查询
-        /// </summary>
-        /// <param name="out_trade_no"></param>
-        /// <returns></returns>
-        public ApiResult<QueryOrderResponse> QueryOrder(String out_trade_no)
-        {
-            var request = new QueryOrderRequest();
-            request.out_trade_no = out_trade_no;
-            return GetResponseFromAsyncTask(QueryOrderAsync(request));
-        }
-        /// <summary>
-        /// 微信支付订单查询 的异步形式。
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public Task<ApiResult<QueryOrderResponse>> QueryOrderAsync(QueryOrderRequest request)
-        {
-            return CallAsync<QueryOrderRequest, QueryOrderResponse>("queryorder", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion
 

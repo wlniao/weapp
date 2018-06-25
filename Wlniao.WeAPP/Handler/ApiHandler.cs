@@ -43,7 +43,7 @@ namespace Wlniao.WeAPP
             if (_ctx.Method == System.Net.Http.HttpMethod.Post)
             {
                 System.Net.Http.HttpContent content;
-                if (_ctx.HttpResponseBody != null)
+                if (_ctx.HttpRequestBody != null)
                 {
                     content = new System.Net.Http.ByteArrayContent(_ctx.HttpRequestBody);
                 }
