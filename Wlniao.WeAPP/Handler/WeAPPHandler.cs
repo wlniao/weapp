@@ -23,6 +23,7 @@ namespace Wlniao.WeAPP
                 { "getwxacode", GetWxaCodeEncode },
                 { "unifiedorder", UnifiedOrderEncode },
                 { "queryorder", QueryOrderEncode },
+                { "micropay", MicropayEncode },
                 { "refund", RefundEncode },
                 { "transfers", TransfersEncode },
                 { "sendredpack", SendRedpackEncode },
@@ -33,6 +34,7 @@ namespace Wlniao.WeAPP
                 { "getwxacode", GetWxaCodeDecode },
                 { "unifiedorder", UnifiedOrderDecode },
                 { "queryorder", QueryOrderDecode },
+                { "micropay", MicropayDecode },
                 { "refund", RefundDecode },
                 { "transfers", TransfersDecode },
                 { "sendredpack", SendRedpackDecode },
@@ -350,6 +352,219 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
+        #region Micropay
+        private void MicropayEncode(Context ctx)
+        {
+            var req = (Request.MicropayRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.appid))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.appid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.appid = Client.CfgWxSvrId;
+                        req.sub_appid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                    if (string.IsNullOrEmpty(req.secret))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing secret" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.mch_id))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                    }
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_id" };
+                        return;
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
+                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.sub_appid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_appid", req.sub_appid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                }
+                kvList.Add(new KeyValuePair<String, String>("body", req.body));
+                kvList.Add(new KeyValuePair<String, String>("auth_code", req.auth_code));
+                kvList.Add(new KeyValuePair<String, String>("out_trade_no", req.out_trade_no));
+                kvList.Add(new KeyValuePair<String, String>("total_fee", req.total_fee.ToString()));
+                kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                if (!string.IsNullOrEmpty(req.detail))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("detail", req.detail));
+                }
+                if (!string.IsNullOrEmpty(req.attach))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("attach", req.attach));
+                }
+                if (!string.IsNullOrEmpty(req.goods_tag))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("goods_tag", req.goods_tag));
+                }
+                if (!string.IsNullOrEmpty(req.limit_pay))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("limit_pay", req.limit_pay));
+                }
+                if (!string.IsNullOrEmpty(req.device_info))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("device_info", req.device_info));
+                }
+                kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                var values = new System.Text.StringBuilder();
+                foreach (var kv in kvList)
+                {
+                    if (!string.IsNullOrEmpty(kv.Value))
+                    {
+                        if (values.Length > 0)
+                        {
+                            values.Append("&");
+                        }
+                        values.Append(kv.Key + "=" + kv.Value);
+                    }
+                }
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
+                {
+                    //通过OpenApi在线签名
+                    var rlt = Wlniao.OpenApi.Common.Post<String>("cashier", "wxsign", values.ToString(), new KeyValuePair<string, string>("sign_type", "MD5"));
+                    if (rlt.success)
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("sign", rlt.data));
+                    }
+                    else
+                    {
+                        ctx.Response = new Error() { errmsg = rlt.message };
+                        return;
+                    }
+                }
+                else
+                {
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+                }
+                #endregion
+
+                #region 生成POST数据
+                var sb = new System.Text.StringBuilder();
+                sb.Append("<xml>");
+                foreach (var kv in kvList)
+                {
+                    if (string.IsNullOrEmpty(kv.Value))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                    }
+                }
+                sb.Append("</xml>");
+                #endregion
+
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = sb.ToString();
+                ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                ctx.RequestPath = "pay/micropay";
+            }
+        }
+        private void MicropayDecode(Context ctx)
+        {
+            try
+            {
+                var res = new Response.MicropayResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
+                    res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                    res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
+                    res.sign = doc.GetElementsByTagName("sign")[0].InnerText.Trim();
+                    try { res.sub_appid = doc.GetElementsByTagName("sub_appid")[0].InnerText.Trim(); } catch { }
+                    try { res.sub_mch_id = doc.GetElementsByTagName("sub_mch_id")[0].InnerText.Trim(); } catch { }
+                    try { res.device_info = doc.GetElementsByTagName("device_info")[0].InnerText.Trim(); } catch { }
+                    if (res.result_code == "SUCCESS")
+                    {
+                        res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim();
+                        res.is_subscribe = doc.GetElementsByTagName("is_subscribe")[0].InnerText.Trim();
+                        try { res.attach = doc.GetElementsByTagName("attach")[0].InnerText.Trim(); } catch { }
+                        try { res.sub_openid = doc.GetElementsByTagName("sub_openid")[0].InnerText.Trim(); } catch { }
+                        try { res.sub_is_subscribe = doc.GetElementsByTagName("sub_is_subscribe")[0].InnerText.Trim(); } catch { }
+                        res.trade_type = doc.GetElementsByTagName("trade_type")[0].InnerText.Trim();
+                        res.bank_type = doc.GetElementsByTagName("bank_type")[0].InnerText.Trim();
+                        try { res.fee_type = doc.GetElementsByTagName("fee_type")[0].InnerText.Trim(); } catch { }
+                        res.total_fee = cvt.ToInt(doc.GetElementsByTagName("total_fee")[0].InnerText.Trim());
+                        res.cash_fee = cvt.ToInt(doc.GetElementsByTagName("cash_fee")[0].InnerText.Trim());
+                        try { res.coupon_fee = cvt.ToInt(doc.GetElementsByTagName("coupon_fee")[0].InnerText.Trim()); } catch { }
+                        try { res.settlement_total_fee = cvt.ToInt(doc.GetElementsByTagName("settlement_total_fee")[0].InnerText.Trim()); } catch { }
+                        res.transaction_id = doc.GetElementsByTagName("transaction_id")[0].InnerText.Trim();
+                        res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
+                        res.time_end = doc.GetElementsByTagName("time_end")[0].InnerText.Trim();
+                        try
+                        {
+                            var t = new DateTime(int.Parse(res.time_end.Substring(0, 4)), int.Parse(res.time_end.Substring(4, 2)), int.Parse(res.time_end.Substring(6, 2)), int.Parse(res.time_end.Substring(8, 2)), int.Parse(res.time_end.Substring(10, 2)), int.Parse(res.time_end.Substring(12, 2)), DateTimeKind.Utc).AddHours(-8);
+                            res.PayTime = DateTools.GetUnix(t);
+                        }
+                        catch { res.PayTime = DateTools.GetUnix(); }
+                        ctx.Response = res;
+                    }
+                    else
+                    {
+                        ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code_des")[0].InnerText.Trim(), errcode = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
+                    }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
         #region QueryOrder
         private void QueryOrderEncode(Context ctx)
         {
@@ -505,7 +720,6 @@ namespace Wlniao.WeAPP
                     if (res.result_code == "SUCCESS")
                     {
                         res.trade_state = doc.GetElementsByTagName("trade_state")[0].InnerText.Trim();
-                        res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
                         if (res.trade_state == "SUCCESS")
                         {
                             res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim();

@@ -368,6 +368,70 @@ namespace Wlniao.WeAPP
         }
         #endregion
 
+        #region Micropay 刷卡支付提交
+        /// <summary>
+        /// 刷卡支付提交
+        /// </summary>
+        /// <param name="auth_code"></param>
+        /// <param name="total_fee"></param>
+        /// <param name="out_trade_no"></param>
+        /// <param name="body"></param>
+        /// <param name="spbill_create_ip"></param>
+        /// <param name="attach"></param>
+        /// <returns></returns>
+        public ApiResult<MicropayResponse> Micropay(String auth_code, Int32 total_fee, String out_trade_no, String body, String spbill_create_ip, String attach)
+        {
+            var request = new MicropayRequest();
+            request.auth_code = auth_code;
+            request.total_fee = total_fee;
+            request.out_trade_no = out_trade_no;
+            request.body = body;
+            request.spbill_create_ip = spbill_create_ip;
+            request.attach = attach;
+            return Micropay(request);
+        }
+        /// <summary>
+        /// 刷卡支付提交
+        /// </summary>
+        public ApiResult<MicropayResponse> Micropay(MicropayRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<MicropayResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.auth_code))
+            {
+                return new ApiResult<MicropayResponse>() { message = "missing auth_code" };
+            }
+            else if (string.IsNullOrEmpty(request.body))
+            {
+                return new ApiResult<MicropayResponse>() { message = "missing body" };
+            }
+            else if (string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<MicropayResponse>() { message = "missing out_trade_no" };
+            }
+            else if (request.total_fee <= 0)
+            {
+                return new ApiResult<MicropayResponse>() { message = "missing total_fee" };
+            }
+            else if (string.IsNullOrEmpty(request.spbill_create_ip))
+            {
+                return new ApiResult<MicropayResponse>() { message = "missing spbill_create_ip" };
+            }
+            return GetResponseFromAsyncTask(MicropayAsync(request));
+        }
+        /// <summary>
+        /// 刷卡支付提交 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<MicropayResponse>> MicropayAsync(MicropayRequest request)
+        {
+            return CallAsync<MicropayRequest, MicropayResponse>("micropay", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+
         #region Refund 按订单申请退款
         /// <summary>
         /// 按订单申请退款
