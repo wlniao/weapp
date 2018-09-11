@@ -235,7 +235,19 @@ namespace Wlniao.WeAPP
 
         #region GetWxaCode 生成小程序码
         /// <summary>
-        /// 
+        /// 生成小程序码
+        /// </summary>
+        public ApiResult<GetWxaCodeResponse> GetWxaCode(String path, Int32 size = 430)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+            }
+            var request = new Wlniao.WeAPP.Request.GetWxaCodeRequest() { path = path, width = size };
+            return GetResponseFromAsyncTask(GetWxaCodeAsync(request));
+        }
+        /// <summary>
+        /// 生成小程序码
         /// </summary>
         public ApiResult<GetWxaCodeResponse> GetWxaCode(GetWxaCodeRequest request)
         {
@@ -257,6 +269,48 @@ namespace Wlniao.WeAPP
         public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeAsync(GetWxaCodeRequest request)
         {
             return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacode", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion 
+        #region GetWxaCode 生成无限制的小程序二维码
+        /// <summary>
+        /// 生成无限制小程序二维码
+        /// </summary>
+        public ApiResult<GetWxaCodeResponse> GetWxaCodeUnlimit(String path, String scene, Int32 size = 430)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+            }
+            if (string.IsNullOrEmpty(scene))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing scene" };
+            }
+            var request = new Wlniao.WeAPP.Request.GetWxaCodeUnlimitRequest() { path = path, scene = scene, width = size };
+            return GetResponseFromAsyncTask(GetWxaCodeUnlimitAsync(request));
+        }
+        /// <summary>
+        /// 生成无限制小程序二维码
+        /// </summary>
+        public ApiResult<GetWxaCodeResponse> GetWxaCodeUnlimit(GetWxaCodeUnlimitRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.path))
+            {
+                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+            }
+            return GetResponseFromAsyncTask(GetWxaCodeUnlimitAsync(request));
+        }
+        /// <summary>
+        /// 生成无限制小程序二维码 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeUnlimitAsync(GetWxaCodeUnlimitRequest request)
+        {
+            return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacodeunlimit", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
 

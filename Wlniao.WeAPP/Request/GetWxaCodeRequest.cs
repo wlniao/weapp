@@ -44,4 +44,14 @@ namespace Wlniao.WeAPP.Request
             public int b { get; set; }
         }
     }
+    /// <summary>
+    /// 获取无限制小程序二维码的请求参数
+    /// </summary>
+    public class GetWxaCodeUnlimitRequest : GetWxaCodeRequest
+    {
+        /// <summary>
+        /// 二维码场景值 最大32个可见字符，只支持数字，大小写英文以及部分特殊字符
+        /// </summary>
+        public string scene { get; set; }
+    }
 }

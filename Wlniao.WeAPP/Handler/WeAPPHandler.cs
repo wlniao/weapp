@@ -21,6 +21,7 @@ namespace Wlniao.WeAPP
         {
             EncoderMap = new Dictionary<string, ResponseEncoder>() {
                 { "getwxacode", GetWxaCodeEncode },
+                { "getwxacodeunlimit", GetWxaCodeUnlimitEncode },
                 { "unifiedorder", UnifiedOrderEncode },
                 { "queryorder", QueryOrderEncode },
                 { "micropay", MicropayEncode },
@@ -32,6 +33,7 @@ namespace Wlniao.WeAPP
             };
             DecoderMap = new Dictionary<string, ResponseDecoder>() {
                 { "getwxacode", GetWxaCodeDecode },
+                { "getwxacodeunlimit", GetWxaCodeUnlimitDecode },
                 { "unifiedorder", UnifiedOrderDecode },
                 { "queryorder", QueryOrderDecode },
                 { "micropay", MicropayDecode },
@@ -80,19 +82,7 @@ namespace Wlniao.WeAPP
         #region GetWxaCode
         private void GetWxaCodeEncode(Context ctx)
         {
-            if (string.IsNullOrEmpty(ctx.AccessToken))
-            {
-                var rlt = Wlniao.OpenApi.Wx.GetAccessToken(ctx.AppId, ctx.AppSecret);
-                if (rlt.success)
-                {
-                    ctx.AccessToken = rlt.data;
-                }
-                else
-                {
-                    ctx.HttpResponseString = JsonConvert.SerializeObject(new { success = false, message = rlt.message });
-                }
-            }
-            if (!string.IsNullOrEmpty(ctx.AccessToken))
+            if (ctx.CheckAccessToken())
             {
                 ctx.Method = System.Net.Http.HttpMethod.Post;
                 ctx.HttpRequestString = JsonConvert.SerializeObject(ctx.Request);
@@ -101,6 +91,29 @@ namespace Wlniao.WeAPP
             }
         }
         private void GetWxaCodeDecode(Context ctx)
+        {
+            if (ctx.HttpResponseBody.Length > 0)
+            {
+                ctx.Response = new Response.GetWxaCodeResponse() { image = ctx.HttpResponseBody };
+            }
+            else
+            {
+                ctx.Response = new Error() { errmsg = "InvalidJsonString" };
+            }
+        }
+        #endregion
+        #region GetWxaCodeUnlimit
+        private void GetWxaCodeUnlimitEncode(Context ctx)
+        {
+            if (ctx.CheckAccessToken())
+            {
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = JsonConvert.SerializeObject(ctx.Request);
+                ctx.RequestPath = "/wxa/getwxacodeunlimit"
+                    + "?access_token=" + ctx.AccessToken;
+            }
+        }
+        private void GetWxaCodeUnlimitDecode(Context ctx)
         {
             if (ctx.HttpResponseBody.Length > 0)
             {

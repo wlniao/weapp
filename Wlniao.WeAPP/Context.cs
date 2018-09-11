@@ -92,5 +92,45 @@ namespace Wlniao.WeAPP
         {
             Retry = 0;
         }
+
+        private static Dictionary<String, dynamic> tokens = new Dictionary<string, dynamic>();
+        /// <summary>
+        /// 检查或同步
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckAccessToken()
+        {
+            if (!tokens.ContainsKey(AppId))
+            {
+                var rlt = Wlniao.OpenApi.Wx.GetAccessTokenByLocal(AppId, AppSecret);
+                if (rlt.success)
+                {
+                    AccessToken = rlt.data;
+                    try
+                    {
+                        tokens.Add(AppId, new { last = DateTime.Now, token = rlt.data });
+                    }
+                    catch { }
+                    return true;
+                }
+            }
+            else if (tokens[AppId].last < DateTime.Now.AddHours(-1))
+            {
+                var rlt = Wlniao.OpenApi.Wx.GetAccessTokenByLocal(AppId, AppSecret);
+                if (rlt.success)
+                {
+                    AccessToken = rlt.data;
+                    tokens[AppId].last = DateTime.Now;
+                    tokens[AppId].token = DateTime.Now;
+                    return true;
+                }
+            }
+            else
+            {
+                AccessToken = tokens[AppId].token;
+                return true;
+            }
+            return false;
+        }
     }
 }
