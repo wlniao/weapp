@@ -93,7 +93,7 @@ namespace Wlniao.WeAPP
             Retry = 0;
         }
 
-        private static Dictionary<String, dynamic> tokens = new Dictionary<string, dynamic>();
+        private static Dictionary<String, TokenCache> tokens = new Dictionary<string, TokenCache>();
         /// <summary>
         /// 检查或同步
         /// </summary>
@@ -102,35 +102,40 @@ namespace Wlniao.WeAPP
         {
             if (!tokens.ContainsKey(AppId))
             {
-                var rlt = Wlniao.OpenApi.Wx.GetAccessTokenByLocal(AppId, AppSecret);
-                if (rlt.success)
-                {
-                    AccessToken = rlt.data;
-                    try
-                    {
-                        tokens.Add(AppId, new { last = DateTime.Now, token = rlt.data });
-                    }
-                    catch { }
-                    return true;
-                }
+                tokens.Add(AppId, new TokenCache());
             }
-            else if (tokens[AppId].last < DateTime.Now.AddHours(-1))
+            if (tokens[AppId].past < DateTime.Now)
             {
-                var rlt = Wlniao.OpenApi.Wx.GetAccessTokenByLocal(AppId, AppSecret);
+                var rlt = Wlniao.OpenApi.Wx.GetAccessToken(AppId, AppSecret);
                 if (rlt.success)
                 {
                     AccessToken = rlt.data;
-                    tokens[AppId].last = DateTime.Now;
-                    tokens[AppId].token = DateTime.Now;
-                    return true;
+                    var expires = 900;
+                    if (rlt.message.Contains("expires in"))
+                    {
+                        expires = cvt.ToInt(rlt.message.SplitBy(" ")[2]);
+                    }
+                    tokens[AppId].past = DateTime.Now.AddSeconds(expires);
+                    tokens[AppId].token = rlt.data;
                 }
             }
             else
             {
                 AccessToken = tokens[AppId].token;
+            }
+            if (string.IsNullOrEmpty(AccessToken))
+            {
+                return false;
+            }
+            else
+            {
                 return true;
             }
-            return false;
+        }
+        private class TokenCache
+        {
+            public String token = "";
+            public DateTime past = DateTime.MinValue;
         }
     }
 }

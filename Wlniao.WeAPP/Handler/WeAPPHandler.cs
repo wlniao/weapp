@@ -102,6 +102,7 @@ namespace Wlniao.WeAPP
             }
         }
         #endregion
+
         #region GetWxaCodeUnlimit
         private void GetWxaCodeUnlimitEncode(Context ctx)
         {
@@ -117,7 +118,7 @@ namespace Wlniao.WeAPP
         {
             if (ctx.HttpResponseBody.Length > 0)
             {
-                ctx.Response = new Response.GetWxaCodeResponse() { image = ctx.HttpResponseBody };
+                ctx.Response = new Response.GetWxaCodeUnlimitResponse() { image = ctx.HttpResponseBody };
             }
             else
             {

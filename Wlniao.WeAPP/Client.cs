@@ -275,31 +275,27 @@ namespace Wlniao.WeAPP
         /// <summary>
         /// 生成无限制小程序二维码
         /// </summary>
-        public ApiResult<GetWxaCodeResponse> GetWxaCodeUnlimit(String path, String scene, Int32 size = 430)
+        public ApiResult<GetWxaCodeUnlimitResponse> GetWxaCodeUnlimit(String page, String scene, Int32 size = 430)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
-            }
             if (string.IsNullOrEmpty(scene))
             {
-                return new ApiResult<GetWxaCodeResponse>() { message = "missing scene" };
+                return new ApiResult<GetWxaCodeUnlimitResponse>() { message = "missing scene" };
             }
-            var request = new Wlniao.WeAPP.Request.GetWxaCodeUnlimitRequest() { path = path, scene = scene, width = size };
+            var request = new Wlniao.WeAPP.Request.GetWxaCodeUnlimitRequest() { page = page, scene = scene, width = size };
             return GetResponseFromAsyncTask(GetWxaCodeUnlimitAsync(request));
         }
         /// <summary>
         /// 生成无限制小程序二维码
         /// </summary>
-        public ApiResult<GetWxaCodeResponse> GetWxaCodeUnlimit(GetWxaCodeUnlimitRequest request)
+        public ApiResult<GetWxaCodeUnlimitResponse> GetWxaCodeUnlimit(GetWxaCodeUnlimitRequest request)
         {
             if (request == null)
             {
-                return new ApiResult<GetWxaCodeResponse>() { message = "require parameters" };
+                return new ApiResult<GetWxaCodeUnlimitResponse>() { message = "require parameters" };
             }
-            else if (string.IsNullOrEmpty(request.path))
+            else if (string.IsNullOrEmpty(request.scene))
             {
-                return new ApiResult<GetWxaCodeResponse>() { message = "missing path" };
+                return new ApiResult<GetWxaCodeUnlimitResponse>() { message = "missing scene" };
             }
             return GetResponseFromAsyncTask(GetWxaCodeUnlimitAsync(request));
         }
@@ -308,9 +304,9 @@ namespace Wlniao.WeAPP
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task<ApiResult<GetWxaCodeResponse>> GetWxaCodeUnlimitAsync(GetWxaCodeUnlimitRequest request)
+        public Task<ApiResult<GetWxaCodeUnlimitResponse>> GetWxaCodeUnlimitAsync(GetWxaCodeUnlimitRequest request)
         {
-            return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacodeunlimit", request, System.Net.Http.HttpMethod.Get);
+            return CallAsync<GetWxaCodeUnlimitRequest, GetWxaCodeUnlimitResponse>("getwxacodeunlimit", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
 
