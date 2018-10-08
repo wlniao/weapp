@@ -271,6 +271,7 @@ namespace Wlniao.WeAPP
             return CallAsync<GetWxaCodeRequest, GetWxaCodeResponse>("getwxacode", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
+
         #region GetWxaCode 生成无限制的小程序二维码
         /// <summary>
         /// 生成无限制小程序二维码
@@ -376,6 +377,7 @@ namespace Wlniao.WeAPP
         /// <returns></returns>
         public Task<ApiResult<UnifiedOrderResponse>> UnifiedOrderAsync(UnifiedOrderRequest request)
         {
+            request.body = request.body.Replace("&", "");
             return CallAsync<UnifiedOrderRequest, UnifiedOrderResponse>("unifiedorder", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
@@ -478,6 +480,7 @@ namespace Wlniao.WeAPP
         /// <returns></returns>
         public Task<ApiResult<MicropayResponse>> MicropayAsync(MicropayRequest request)
         {
+            request.body = request.body.Replace("&", "");
             return CallAsync<MicropayRequest, MicropayResponse>("micropay", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
@@ -538,7 +541,6 @@ namespace Wlniao.WeAPP
             request.partner_trade_no = trade_no;
             request.amount = amount;
             request.openid = openid;
-            request.desc = desc;
             if (!string.IsNullOrEmpty(check_name))
             {
                 request.check_name = true;
@@ -587,6 +589,7 @@ namespace Wlniao.WeAPP
         /// <returns></returns>
         public Task<ApiResult<TransfersResponse>> TransfersAsync(TransfersRequest request)
         {
+            request.desc = request.desc.Replace("&", "");
             return CallAsync<TransfersRequest, TransfersResponse>("transfers", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion 
@@ -666,6 +669,10 @@ namespace Wlniao.WeAPP
         /// <returns></returns>
         public Task<ApiResult<SendRedpackResponse>> SendRedpackAsync(SendRedpackRequest request)
         {
+            request.act_name = request.act_name.Replace("&", "");
+            request.send_name = request.send_name.Replace("&", "");
+            request.wishing = request.wishing.Replace("&", "");
+            request.remark = request.remark.Replace("&", "");
             return CallAsync<SendRedpackRequest, SendRedpackResponse>("sendredpack", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion
