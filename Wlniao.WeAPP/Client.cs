@@ -21,6 +21,7 @@ namespace Wlniao.WeAPP
         internal static string _WxPaySecret = null; //收款方支付密钥
         internal static string _WxSvrId = null;     //服务商公众号
         internal static string _WxSvrPayId = null;  //服务商商户号
+        internal static string _OpenApiHost = null; //开放服务地址
         /// <summary>
         /// 小程序/公众号Id
         /// </summary>
@@ -131,6 +132,24 @@ namespace Wlniao.WeAPP
                     _WxSvrPayId = Config.GetSetting("WxSvrPayId");
                 }
                 return _WxSvrPayId;
+            }
+        }
+        /// <summary>
+        /// 开放服务地址
+        /// </summary>
+        public static string OpenApiHost
+        {
+            get
+            {
+                if (_OpenApiHost == null)
+                {
+                    _OpenApiHost = Config.GetSetting("OpenApiHost");
+                    if (string.IsNullOrEmpty(_OpenApiHost))
+                    {
+                        _OpenApiHost = "https://openapi.wlniao.com";
+                    }
+                }
+                return _OpenApiHost;
             }
         }
         #endregion
@@ -489,6 +508,36 @@ namespace Wlniao.WeAPP
         /// <summary>
         /// 按订单申请退款
         /// </summary>
+        /// <param name="out_refund_no">商户退款单号</param>
+        /// <param name="transaction_id">微信支付订单号</param>
+        /// <returns></returns>
+        public ApiResult<RefundResponse> Refund(String out_refund_no, String transaction_id)
+        {
+            var request = new RefundRequest();
+            request.out_refund_no = out_refund_no;
+            request.transaction_id = transaction_id;
+            return GetResponseFromAsyncTask(RefundAsync(request));
+        }
+        /// <summary>
+        /// 按订单申请退款
+        /// </summary>
+        /// <param name="out_refund_no">商户退款单号</param>
+        /// <param name="out_trade_no">商户订单号</param>
+        /// <param name="total_amount">订单金额（分）</param>
+        /// <param name="refund_amount">退款金额（分）</param>
+        /// <returns></returns>
+        public ApiResult<RefundResponse> Refund(String out_refund_no, String out_trade_no, Int32 total_amount, Int32 refund_amount)
+        {
+            var request = new RefundRequest();
+            request.out_refund_no = out_refund_no;
+            request.out_trade_no = out_trade_no;
+            request.total_fee = total_amount;
+            request.refund_fee = refund_amount;
+            return GetResponseFromAsyncTask(RefundAsync(request));
+        }
+        /// <summary>
+        /// 按订单申请退款
+        /// </summary>
         public ApiResult<RefundResponse> Refund(RefundRequest request)
         {
             if (request == null)
@@ -499,17 +548,6 @@ namespace Wlniao.WeAPP
             {
                 return new ApiResult<RefundResponse>() { message = "missing transaction_id or out_trade_no" };
             }
-            return GetResponseFromAsyncTask(RefundAsync(request));
-        }
-        /// <summary>
-        /// 按订单申请退款
-        /// </summary>
-        /// <param name="out_trade_no"></param>
-        /// <returns></returns>
-        public ApiResult<RefundResponse> Refund(String out_trade_no)
-        {
-            var request = new RefundRequest();
-            request.out_trade_no = out_trade_no;
             return GetResponseFromAsyncTask(RefundAsync(request));
         }
         /// <summary>

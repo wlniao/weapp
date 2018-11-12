@@ -877,7 +877,7 @@ namespace Wlniao.WeAPP
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
-                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestHost = Client.OpenApiHost;
                     ctx.RequestPath = "cashier/refund";
                 }
                 else
@@ -1232,7 +1232,7 @@ namespace Wlniao.WeAPP
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = Newtonsoft.Json.JsonConvert.SerializeObject(kvList);
-                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestHost = Client.OpenApiHost;
                     ctx.RequestPath = "cashier/sendredpack";
                 }
                 else
@@ -1397,7 +1397,7 @@ namespace Wlniao.WeAPP
                     //未来鸟子商户专用
                     ctx.Method = System.Net.Http.HttpMethod.Post;
                     ctx.HttpRequestString = JsonConvert.SerializeObject(kvList);
-                    ctx.RequestHost = "https://openapi.wlniao.com";
+                    ctx.RequestHost = Client.OpenApiHost;
                     ctx.RequestPath = "cashier/queryredpack";
                 }
                 else
