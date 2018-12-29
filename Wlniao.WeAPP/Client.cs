@@ -579,6 +579,7 @@ namespace Wlniao.WeAPP
             request.partner_trade_no = trade_no;
             request.amount = amount;
             request.openid = openid;
+            request.desc = desc;
             if (!string.IsNullOrEmpty(check_name))
             {
                 request.check_name = true;
