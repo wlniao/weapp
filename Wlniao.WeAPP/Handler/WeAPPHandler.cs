@@ -193,7 +193,15 @@ namespace Wlniao.WeAPP
                     kvList.Add(new KeyValuePair<String, String>("fee_type", req.fee_type));
                 }
                 kvList.Add(new KeyValuePair<String, String>("total_fee", req.total_fee.ToString()));
-                kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                if (string.IsNullOrEmpty(req.spbill_create_ip) || !strUtil.IsIP(req.spbill_create_ip))
+                {
+                    req.spbill_create_ip = Wlniao.OpenApi.Tool.GetIP();
+                    kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                }
+                else
+                {
+                    kvList.Add(new KeyValuePair<String, String>("spbill_create_ip", req.spbill_create_ip));
+                }
                 if (!string.IsNullOrEmpty(req.time_start))
                 {
                     kvList.Add(new KeyValuePair<String, String>("time_start", req.time_start));
@@ -734,7 +742,7 @@ namespace Wlniao.WeAPP
                     if (res.result_code == "SUCCESS")
                     {
                         res.trade_state = doc.GetElementsByTagName("trade_state")[0].InnerText.Trim();
-                        if (res.trade_state == "SUCCESS")
+                        if (res.trade_state == "SUCCESS" || res.trade_state == "REFUND")
                         {
                             res.openid = doc.GetElementsByTagName("openid")[0].InnerText.Trim();
                             res.trade_type = doc.GetElementsByTagName("trade_type")[0].InnerText.Trim();
