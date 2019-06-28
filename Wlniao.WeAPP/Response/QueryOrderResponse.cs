@@ -54,6 +54,10 @@ namespace Wlniao.WeAPP.Response
         /// </summary>
         /// <remarks>结果信息描述</remarks>
         public string err_code_des { get; set; }
+        /// <summary>
+        /// 退款时间UNIXTIME
+        /// </summary>
+        public long RefundTime { get; set; }
 
 
         /// <summary>

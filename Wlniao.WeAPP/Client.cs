@@ -23,7 +23,7 @@ namespace Wlniao.WeAPP
         internal static string _WxSvrPayId = null;  //服务商商户号
         internal static string _OpenApiHost = null; //开放服务地址
         /// <summary>
-        /// 小程序/公众号Id
+        /// [WxAppId]小程序/公众号Id
         /// </summary>
         public static string CfgWxAppId
         {
@@ -37,7 +37,7 @@ namespace Wlniao.WeAPP
             }
         }
         /// <summary>
-        /// 小程序/公众号密钥
+        /// [WxAppSecret]小程序/公众号密钥
         /// </summary>
         public static string CfgWxAppSecret
         {
@@ -51,7 +51,7 @@ namespace Wlniao.WeAPP
             }
         }
         /// <summary>
-        /// 公众号接口调用令牌
+        /// [WxAppToken]公众号接口调用令牌
         /// </summary>
         public static string CfgWxAppToken
         {
@@ -65,7 +65,7 @@ namespace Wlniao.WeAPP
             }
         }
         /// <summary>
-        /// 接口消息加密解密密钥
+        /// [WxAppEncodingAESKey]接口消息加密解密密钥
         /// </summary>
         public static string CfgWxAppEncodingAESKey
         {
@@ -436,6 +436,44 @@ namespace Wlniao.WeAPP
         public Task<ApiResult<QueryOrderResponse>> QueryOrderAsync(QueryOrderRequest request)
         {
             return CallAsync<QueryOrderRequest, QueryOrderResponse>("queryorder", request, System.Net.Http.HttpMethod.Get);
+        }
+        #endregion
+
+        #region QueryRefund 查询退款
+        /// <summary>
+        /// 微信支付查询退款
+        /// </summary>
+        public ApiResult<QueryRefundResponse> QueryRefund(QueryRefundRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<QueryRefundResponse>() { message = "require parameters" };
+            }
+            else if (string.IsNullOrEmpty(request.transaction_id) && string.IsNullOrEmpty(request.out_trade_no))
+            {
+                return new ApiResult<QueryRefundResponse>() { message = "missing transaction_id or out_trade_no" };
+            }
+            return GetResponseFromAsyncTask(QueryRefundAsync(request));
+        }
+        /// <summary>
+        /// 微信支付查询退款
+        /// </summary>
+        /// <param name="out_trade_no"></param>
+        /// <returns></returns>
+        public ApiResult<QueryRefundResponse> QueryRefund(String out_trade_no)
+        {
+            var request = new QueryRefundRequest();
+            request.out_trade_no = out_trade_no;
+            return GetResponseFromAsyncTask(QueryRefundAsync(request));
+        }
+        /// <summary>
+        /// 微信支付查询退款 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<QueryRefundResponse>> QueryRefundAsync(QueryRefundRequest request)
+        {
+            return CallAsync<QueryRefundRequest, QueryRefundResponse>("refundquery", request, System.Net.Http.HttpMethod.Get);
         }
         #endregion
 

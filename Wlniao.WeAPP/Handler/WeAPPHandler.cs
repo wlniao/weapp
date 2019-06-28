@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Wlniao.Handler;
@@ -24,6 +26,7 @@ namespace Wlniao.WeAPP
                 { "getwxacodeunlimit", GetWxaCodeUnlimitEncode },
                 { "unifiedorder", UnifiedOrderEncode },
                 { "queryorder", QueryOrderEncode },
+                { "refundquery", QueryRefundEncode },
                 { "micropay", MicropayEncode },
                 { "refund", RefundEncode },
                 { "transfers", TransfersEncode },
@@ -36,6 +39,7 @@ namespace Wlniao.WeAPP
                 { "getwxacodeunlimit", GetWxaCodeUnlimitDecode },
                 { "unifiedorder", UnifiedOrderDecode },
                 { "queryorder", QueryOrderDecode },
+                { "refundquery", QueryRefundDecode },
                 { "micropay", MicropayDecode },
                 { "refund", RefundDecode },
                 { "transfers", TransfersDecode },
@@ -778,6 +782,217 @@ namespace Wlniao.WeAPP
                             ctx.Response = new Error() { errmsg = doc.GetElementsByTagName("err_code")[0].InnerText.Trim() };
                         }
                     }
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = res.return_msg };
+                }
+            }
+            catch
+            {
+                ctx.Response = new Error() { errmsg = "InvalidXmlString" };
+            }
+        }
+        #endregion
+
+        #region QueryRefund
+        private void QueryRefundEncode(Context ctx)
+        {
+            var req = (Request.QueryRefundRequest)ctx.Request;
+            if (req != null)
+            {
+                if (string.IsNullOrEmpty(req.appid))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrId))
+                    {
+                        req.appid = Client.CfgWxAppId;
+                    }
+                    else
+                    {
+                        req.appid = Client.CfgWxSvrId;
+                        req.sub_appid = Client.CfgWxAppId;
+                    }
+                    if (string.IsNullOrEmpty(req.appid))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing appid" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.secret))
+                {
+                    req.secret = Client.CfgWxPaySecret;
+                    if (string.IsNullOrEmpty(req.secret))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing secret" };
+                        return;
+                    }
+                }
+                if (string.IsNullOrEmpty(req.mch_id))
+                {
+                    if (string.IsNullOrEmpty(Client.CfgWxSvrPayId))
+                    {
+                        req.mch_id = Client.CfgWxPayId;
+                    }
+                    else
+                    {
+                        req.mch_id = Client.CfgWxSvrPayId;
+                        req.sub_mch_id = Client.CfgWxPayId;
+                    }
+                    if (string.IsNullOrEmpty(req.mch_id))
+                    {
+                        ctx.Response = new Error() { errmsg = "missing mch_id" };
+                        return;
+                    }
+                }
+                #region 生成签名
+                var nonceStr = strUtil.CreateRndStrE(20).ToUpper();
+                var kvList = new List<KeyValuePair<String, String>>();
+                kvList.Add(new KeyValuePair<String, String>("appid", req.appid));
+                kvList.Add(new KeyValuePair<String, String>("mch_id", req.mch_id));
+                if (!string.IsNullOrEmpty(req.sub_appid))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_appid", req.sub_appid));
+                }
+                if (!string.IsNullOrEmpty(req.sub_mch_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("sub_mch_id", req.sub_mch_id));
+                }
+                kvList.Add(new KeyValuePair<String, String>("nonce_str", nonceStr));
+                kvList.Add(new KeyValuePair<String, String>("sign_type", req.sign_type));
+                if (!string.IsNullOrEmpty(req.transaction_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("transaction_id", req.transaction_id));
+                }
+                else if (!string.IsNullOrEmpty(req.out_trade_no))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_trade_no", req.out_trade_no));
+                }
+                else if (!string.IsNullOrEmpty(req.refund_id))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("refund_id", req.refund_id));
+                }
+                else if (!string.IsNullOrEmpty(req.out_refund_no))
+                {
+                    kvList.Add(new KeyValuePair<String, String>("out_refund_no", req.out_refund_no));
+                }
+                else
+                {
+                    ctx.Response = new Error() { errmsg = "missing query_id" };
+                    return;
+                }
+                if (req.mch_id == Client.WLN_WX_SVR_PAYID)
+                {
+                    //通过OpenApi在线签名
+                    var rlt = Wlniao.OpenApi.Common.Post<String>("cashier", "wxapisign", JsonConvert.SerializeObject(kvList), new KeyValuePair<string, string>("sign_type", req.sign_type));
+                    if (rlt.success)
+                    {
+                        kvList.Add(new KeyValuePair<String, String>("sign", rlt.data));
+                    }
+                    else
+                    {
+                        ctx.Response = new Error() { errmsg = rlt.message };
+                        return;
+                    }
+                }
+                else
+                {
+                    kvList.Sort(delegate (KeyValuePair<String, String> small, KeyValuePair<String, String> big) { return small.Key.CompareTo(big.Key); });
+                    var values = new System.Text.StringBuilder();
+                    foreach (var kv in kvList)
+                    {
+                        if (!string.IsNullOrEmpty(kv.Value))
+                        {
+                            if (values.Length > 0)
+                            {
+                                values.Append("&");
+                            }
+                            values.Append(kv.Key + "=" + kv.Value);
+                        }
+                    }
+                    values.Append("&key=" + req.secret);
+                    //生成sig
+                    byte[] md5_result = System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes(values.ToString()));
+                    System.Text.StringBuilder sig_builder = new System.Text.StringBuilder();
+                    foreach (byte b in md5_result)
+                    {
+                        sig_builder.Append(b.ToString("x2"));
+                    }
+                    kvList.Add(new KeyValuePair<String, String>("sign", sig_builder.ToString().ToUpper()));
+                }
+                #endregion
+
+                #region 生成POST数据
+                var sb = new System.Text.StringBuilder();
+                sb.Append("<xml>");
+                foreach (var kv in kvList)
+                {
+                    if (string.IsNullOrEmpty(kv.Value))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        sb.Append("<" + kv.Key + ">" + kv.Value + "</" + kv.Key + ">");
+                    }
+                }
+                sb.Append("</xml>");
+                #endregion
+
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = sb.ToString();
+                ctx.RequestHost = "https://api.mch.weixin.qq.com";
+                ctx.RequestPath = "pay/refundquery";
+            }
+        }
+        private void QueryRefundDecode(Context ctx)
+        {
+            try
+            {
+                var res = new Response.QueryRefundResponse();
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(ctx.HttpResponseString);
+                res.return_code = doc.GetElementsByTagName("return_code")[0].InnerText.Trim();
+                res.return_msg = doc.GetElementsByTagName("return_msg")[0].InnerText.Trim();
+                if (res.return_code == "SUCCESS")
+                {
+                    res.result_code = doc.GetElementsByTagName("result_code")[0].InnerText.Trim();
+                    res.appid = doc.GetElementsByTagName("appid")[0].InnerText.Trim();
+                    res.mch_id = doc.GetElementsByTagName("mch_id")[0].InnerText.Trim();
+                    res.nonce_str = doc.GetElementsByTagName("nonce_str")[0].InnerText.Trim();
+                    res.sign = doc.GetElementsByTagName("sign")[0].InnerText.Trim();
+                    res.total_fee = cvt.ToInt(doc.GetElementsByTagName("total_fee")[0].InnerText.Trim());
+                    res.cash_fee = cvt.ToInt(doc.GetElementsByTagName("cash_fee")[0].InnerText.Trim());
+                    res.transaction_id = doc.GetElementsByTagName("transaction_id")[0].InnerText.Trim();
+                    res.out_trade_no = doc.GetElementsByTagName("out_trade_no")[0].InnerText.Trim();
+                    res.refund_count = cvt.ToInt(doc.GetElementsByTagName("refund_count")[0].InnerText.Trim());
+                    try { res.fee_type = doc.GetElementsByTagName("fee_type")[0].InnerText.Trim(); } catch { }
+                    try { res.settlement_total_fee = cvt.ToInt(doc.GetElementsByTagName("settlement_total_fee")[0].InnerText.Trim()); } catch { }
+                    res.details = new List<Response.QueryRefundResponse.RefundDetails>();
+                    for (var i = 0; i < res.refund_count; i++)
+                    {
+                        var detail = new Response.QueryRefundResponse.RefundDetails();
+                        try { detail.refund_status = doc.GetElementsByTagName("refund_status_" + i)[0].InnerText.Trim(); } catch { }
+                        try { detail.refund_id = doc.GetElementsByTagName("refund_id_" + i)[0].InnerText.Trim(); } catch { }
+                        try { detail.refund_fee = cvt.ToInt(doc.GetElementsByTagName("refund_fee_" + i)[0].InnerText.Trim()); } catch { }
+                        try { detail.settlement_refund_fee = cvt.ToInt(doc.GetElementsByTagName("settlement_refund_fee_" + i)[0].InnerText.Trim()); } catch { }
+                        try { detail.refund_channel = doc.GetElementsByTagName("refund_channel_" + i)[0].InnerText.Trim(); } catch { }
+                        try { detail.refund_recv_accout = doc.GetElementsByTagName("refund_recv_accout_" + i)[0].InnerText.Trim(); } catch { }
+                        try { detail.refund_success_time = doc.GetElementsByTagName("refund_success_time_" + i)[0].InnerText.Trim(); } catch { }
+
+                        if (detail.refund_status == "SUCCESS")
+                        {
+                            try
+                            {
+                                var t = new DateTime(int.Parse(detail.refund_success_time.Substring(0, 4)), int.Parse(detail.refund_success_time.Substring(5, 2)), int.Parse(detail.refund_success_time.Substring(8, 2)), int.Parse(detail.refund_success_time.Substring(11, 2)), int.Parse(detail.refund_success_time.Substring(14, 2)), int.Parse(detail.refund_success_time.Substring(17, 2)), DateTimeKind.Utc).AddHours(-8);
+                                detail.RefundTime = DateTools.GetUnix(t);
+                            }
+                            catch { detail.RefundTime = 0; }
+                        }
+                        res.details.Add(detail);
+                    }
+
+                    res.RefundTime = res.details.Where(a => a.refund_status == "SUCCESS" && a.RefundTime > 0).Min(a => a.RefundTime);
+                    ctx.Response = res;
                 }
                 else
                 {
