@@ -3,49 +3,33 @@ using System.Collections.Generic;
 namespace Wlniao.WeAPP.Request
 {
     /// <summary>
-    /// 获取无限制小程序二维码的请求参数
+    /// 推送订阅消息的请求参数
     /// </summary>
-    public class GetWxaCodeUnlimitRequest : Wlniao.Handler.IRequest
+    public class SubscribeMessageSendRequest : Wlniao.Handler.IRequest
     {
-        private int _width = 430;
         /// <summary>
-        /// 默认进入的页面 不能为空，最大长度 128 字节
+        /// 接收者（用户）的 openid
+        /// </summary>
+        public string touser { get; set; }
+        /// <summary>
+        /// page
+        /// </summary>
+        public string template_id { get; set; }
+        /// <summary>
+        /// 点击模板卡片后的跳转页面，仅限本小程序内的页面。支持带参数,（示例index?foo=bar）。该字段不填则模板无跳转。
         /// </summary>
         public string page { get; set; }
         /// <summary>
-        /// 二维码场景值 最大32个可见字符，只支持数字，大小写英文以及部分特殊字符
+        /// 模板内容，格式形如 { "key1": { "value": any }, "key2": { "value": any } }
         /// </summary>
-        public string scene { get; set; }
+        public Object data { get; set; }
         /// <summary>
-        /// 二维码的宽度 默认430
+        /// 跳转小程序类型：developer为开发版；trial为体验版；formal为正式版；默认为正式版
         /// </summary>
-        public int width { get { return _width; } set { _width = value; } }
+        public string miniprogram_state { get; set; }
         /// <summary>
-        /// 自动配置线条颜色，如果颜色依然是黑色，则说明不建议配置主色调
+        /// 进入小程序查看”的语言类型，支持zh_CN(简体中文)、en_US(英文)、zh_HK(繁体中文)、zh_TW(繁体中文)，默认为zh_CN
         /// </summary>
-        public bool auto_color { get; set; }
-        /// <summary>
-        /// 默认进入的页面 不能为空，最大长度 128 字节
-        /// </summary>
-        public Color line_color { get; set; }
-
-        /// <summary>
-        /// RGB颜色
-        /// </summary>
-        public class Color
-        {
-            /// <summary>
-            /// 
-            /// </summary>
-            public int r { get; set; }
-            /// <summary>
-            /// 
-            /// </summary>
-            public int g { get; set; }
-            /// <summary>
-            /// 
-            /// </summary>
-            public int b { get; set; }
-        }
+        public string lang { get; set; }
     }
 }

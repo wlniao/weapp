@@ -14,7 +14,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PackageId>Wlniao.WeAPP</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <RootNamespace>Wlniao.WeAPP</RootNamespace>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
@@ -35,9 +35,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
     <DocumentationFile>bin\Release\netcoreapp3.1\Wlniao.WeAPP.xml</DocumentationFile>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="3.0.2" />
+    <PackageReference Include="Wlniao.XCore" Version="3.0.14" />
   </ItemGroup>
 
 </Project>

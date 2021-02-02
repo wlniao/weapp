@@ -330,6 +330,49 @@ namespace Wlniao.WeAPP
         }
         #endregion 
 
+        #region SubscribeMessageSend 推送订阅消息
+        /// <summary>
+        /// 推送订阅消息
+        /// </summary>
+        public ApiResult<SubscribeMessageSendResponse> SubscribeMessageSend(String touser, String template_id, Object data, String page = "")
+        {
+            if (string.IsNullOrEmpty(touser))
+            {
+                return new ApiResult<SubscribeMessageSendResponse>() { message = "missing touser" };
+            }
+            if (string.IsNullOrEmpty(template_id))
+            {
+                return new ApiResult<SubscribeMessageSendResponse>() { message = "missing template_id" };
+            }
+            if (data == null)
+            {
+                return new ApiResult<SubscribeMessageSendResponse>() { message = "missing data" };
+            }
+            var request = new Wlniao.WeAPP.Request.SubscribeMessageSendRequest() { touser = touser, template_id = template_id, data = data, page = page };
+            return GetResponseFromAsyncTask(SubscribeMessageSendtAsync(request));
+        }
+        /// <summary>
+        /// 推送订阅消息
+        /// </summary>
+        public ApiResult<SubscribeMessageSendResponse> SubscribeMessageSend(SubscribeMessageSendRequest request)
+        {
+            if (request == null)
+            {
+                return new ApiResult<SubscribeMessageSendResponse>() { message = "require parameters" };
+            }
+            return GetResponseFromAsyncTask(SubscribeMessageSendtAsync(request));
+        }
+        /// <summary>
+        /// 推送订阅消息 的异步形式。
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task<ApiResult<SubscribeMessageSendResponse>> SubscribeMessageSendtAsync(SubscribeMessageSendRequest request)
+        {
+            return CallAsync<SubscribeMessageSendRequest, SubscribeMessageSendResponse>("subscribemessagesend", request, System.Net.Http.HttpMethod.Post);
+        }
+        #endregion 
+
         #region UnifiedOrder 微信支付统一下单
         /// <summary>
         /// 小程序支付统一下单

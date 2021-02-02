@@ -24,6 +24,7 @@ namespace Wlniao.WeAPP
             EncoderMap = new Dictionary<string, ResponseEncoder>() {
                 { "getwxacode", GetWxaCodeEncode },
                 { "getwxacodeunlimit", GetWxaCodeUnlimitEncode },
+                { "subscribemessagesend", SubscribeMessageSendEncode },
                 { "unifiedorder", UnifiedOrderEncode },
                 { "queryorder", QueryOrderEncode },
                 { "refundquery", QueryRefundEncode },
@@ -37,6 +38,7 @@ namespace Wlniao.WeAPP
             DecoderMap = new Dictionary<string, ResponseDecoder>() {
                 { "getwxacode", GetWxaCodeDecode },
                 { "getwxacodeunlimit", GetWxaCodeUnlimitDecode },
+                { "subscribemessagesend", SubscribeMessageSendDecode },
                 { "unifiedorder", UnifiedOrderDecode },
                 { "queryorder", QueryOrderDecode },
                 { "refundquery", QueryRefundDecode },
@@ -123,6 +125,30 @@ namespace Wlniao.WeAPP
             if (ctx.HttpResponseBody.Length > 0)
             {
                 ctx.Response = new Response.GetWxaCodeUnlimitResponse() { image = ctx.HttpResponseBody };
+            }
+            else
+            {
+                ctx.Response = new Error() { errmsg = "InvalidJsonString" };
+            }
+        }
+        #endregion
+
+        #region SubscribeMessageSend
+        private void SubscribeMessageSendEncode(Context ctx)
+        {
+            if (ctx.CheckAccessToken())
+            {
+                ctx.Method = System.Net.Http.HttpMethod.Post;
+                ctx.HttpRequestString = JsonConvert.SerializeObject(ctx.Request);
+                ctx.RequestPath = "/cgi-bin/message/subscribe/send"
+                    + "?access_token=" + ctx.AccessToken;
+            }
+        }
+        private void SubscribeMessageSendDecode(Context ctx)
+        {
+            if (ctx.HttpResponseBody.Length > 0)
+            {
+                ctx.Response = new Response.SubscribeMessageSendResponse() {  };
             }
             else
             {
