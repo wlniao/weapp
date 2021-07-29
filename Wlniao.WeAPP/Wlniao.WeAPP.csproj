@@ -5,7 +5,7 @@
     <Copyright>Copyright 2017 Wlniao</Copyright>
     <VersionPrefix>1.6.5</VersionPrefix>
     <Authors>Chaoyi Xie</Authors>
-    <RuntimeFrameworkVersion>3.0.0</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>3.1.0</RuntimeFrameworkVersion>
     <TargetFrameworks>netstandard2.1;netcoreapp3.1</TargetFrameworks>
     <AssemblyName>Wlniao.WeAPP</AssemblyName>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.1' ">2.1.0</NetStandardImplicitPackageVersion>
@@ -14,7 +14,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PackageId>Wlniao.WeAPP</PackageId>
-    <Version>0.3.1</Version>
+    <Version>0.3.3</Version>
     <RootNamespace>Wlniao.WeAPP</RootNamespace>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
@@ -36,7 +36,10 @@
     <DocumentationFile>bin\Release\netcoreapp3.1\Wlniao.WeAPP.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Wlniao.XCore" Version="3.0.14" />
+    <Compile Remove="Handler\RetryHandler .cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Wlniao.XCore" Version="3.1.5" />
   </ItemGroup>
 
 </Project>
