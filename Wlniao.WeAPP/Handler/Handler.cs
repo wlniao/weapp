@@ -17,7 +17,6 @@ namespace Wlniao.WeAPP
             PipelineHandler handler;
             handler = new ApiHandler();
             handler = new WeAPPHandler(handler);
-            handler = new RetryHandler(handler);
             inner = handler;
         }
         /// <summary>

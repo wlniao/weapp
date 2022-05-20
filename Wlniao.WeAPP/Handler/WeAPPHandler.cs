@@ -1186,7 +1186,6 @@ namespace Wlniao.WeAPP
                     else
                     {
                         log.Error("not found " + cerPath);
-                        ctx.Retry = 999;
                         ctx.Response = new Error() { errmsg = "cert file not found" };
                         return;
                     }
@@ -1348,7 +1347,6 @@ namespace Wlniao.WeAPP
                 else
                 {
                     log.Error("not found " + cerPath);
-                    ctx.Retry = 999;
                     ctx.Response = new Error() { errmsg = "cert file not found" };
                     return;
                 }
@@ -1705,7 +1703,6 @@ namespace Wlniao.WeAPP
                     else
                     {
                         log.Error("not found " + cerPath);
-                        ctx.Retry = 999;
                         ctx.Response = new Error() { errmsg = "cert file not found" };
                         return;
                     }
